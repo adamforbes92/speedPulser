@@ -1,46 +1,23 @@
 void basicInit() {
-#if serialDebug
-  Serial.begin(baudSerial);
-  Serial.println(F("Initialising SpeedPulser..."));
-#endif
+  DEBUG("Initialising PWM...");
+  pinMode(pinMotOutput, OUTPUT);                                          // now assign, should already be high
+  digitalWrite(pinMotOutput, HIGH);                                       // force pin high before assigning - should stop motor jerking on boot?
+  PWM_Instance = new ESP32_FAST_PWM(pinMotOutput, frequency, dutyCycle);  // begin PWM with a base freq. of 10kHz @ 100% duty (mot. off)
+  DEBUG("Initialised PWM...");
 
-#if serialDebug
-  Serial.println(F("Initialising PWM..."));
-#endif
-  digitalWrite(pinMotOutput, HIGH);                          // force pin high before assigning - should stop motor jerking on boot?
-  pinMode(pinMotOutput, OUTPUT);                             // now assign, should already be high
-  PWM_Instance = new AVR_PWM(pinMotOutput, frequency, 100);  // begin PWM with a base freq. of 10kHz @ 100% duty (mot. off)
-
-#if serialDebug
-  Serial.println(F("Initialised PWM!"));
-#endif
-
-#if serialDebug
-  Serial.println(F("Setting up pins..."));
-#endif
-
+  DEBUG("Setting up pins...");
   attachInterrupt(digitalPinToInterrupt(pinSpeedOutput), incomingHz, RISING);  //setup interrupt to toggle pin on change.  Consider changing to just a loop to capture pulses?
+  DEBUG("Pins setup!");
 
-#if serialDebug
-  Serial.println(F("Pins setup!"));
-  Serial.println(F("Initialised SpeedPulser!"));
-#endif
+  DEBUG("Initialised SpeedPulser!");
 }
 
 void testSpeed() {
-  if (tempDuty > 0) {
-    PWM_Instance->setPWM(pinMotOutput, frequency, tempDuty);
-  } else {
-    for (int i = motorUpperLimit; i >= motorLowerLimit; i--) {
-      Serial.println(i);
-      PWM_Instance->setPWM(pinMotOutput, frequency, i);
-      delay(200);
-    }
-
-    for (int i = motorLowerLimit; i <= motorUpperLimit; i++) {
-      Serial.println(i);
-      PWM_Instance->setPWM(pinMotOutput, frequency, i);
-      delay(200);
-    }
+  DEBUG("PWM: %d", tempDuty);
+  while (tempDuty < 100) {
+    tempDuty += 0.01;
+    uint8_t dutyCycle = map(tempDuty, 0, 100, motorLowerLimit, motorUpperLimit);  // map incoming range to this codes range.  Should match, but sense check...
+    PWM_Instance->setPWM_manual(pinMotOutput, tempDuty);
+    delay(sweepSpeed);
   }
 }

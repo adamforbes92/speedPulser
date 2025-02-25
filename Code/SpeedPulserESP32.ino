@@ -25,7 +25,9 @@ Uses 'AVR_PWM' for easier PWM control.
 
 #include "speedPulser_defs.h"
 
-AVR_PWM* PWM_Instance;
+ESP32_FAST_PWM* PWM_Instance;
+int PWM_resolution = 12;
+#define ENABLE_DEBUG
 
 void incomingHz() {                                               // Interrupt 0 service routine
   static unsigned long previousMicros = micros();                 // remember variable, initialize first time
@@ -37,42 +39,36 @@ void incomingHz() {                                               // Interrupt 0
 }
 
 void setup() {
+#ifdef ENABLE_DEBUG
+  Serial.begin(115200);
+  DEBUG("Initialising SpeedPulser...");
+#endif
+
   basicInit();                                         // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
-  PWM_Instance->setPWM(pinMotOutput, frequency, 100);  // set motor to off in first instance (100% duty)
+  PWM_Instance->setPWM(pinMotOutput, frequency, dutyCycle);  // set motor to off in first instance (100% duty)
 }
 
 void loop() {
-#if testSpeedo
-  testSpeed();  // if tempDuty > 0, set to fixed duty, else sweep up/down
-#endif
-
-#if !testSpeedo
-  if (incomingType != 0 || incomingType != 1) {
-#if serialDebug
-    Serial.println(F("Error! 'Incoming Type' set incorrectly!"));
-#endif
+  if (testSpeedo) {
+    testSpeed();  // if tempDuty > 0, set to fixed duty, else sweep up/down
   } else {
+    DEBUG("Duty Incoming: %d", dutyCycleIncoming);
     if (dutyCycle != dutyCycleIncoming) {                                                // only update PWM IF speed has changed (can cause flicker otherwise)
       if (incomingType == 0) {                                                           // if 'Can2Cluster'
         dutyCycle = map(dutyCycleIncoming, minFreqCAN, maxFreqCAN, minSpeed, maxSpeed);  // map incoming range to this codes range.  Should match, but sense check...
         dutyCycle = map(dutyCycle, minFreqCAN, 100, motorUpperLimit, motorLowerLimit);   // re-map the range to the motor limits.  Anything after xx% = 100, anything <xx% = lowest limit (highest speed)
-        
-        PWM_Instance->setPWM(pinMotOutput, frequency, dutyCycle);
+
+        PWM_Instance->setPWM_manual(pinMotOutput, dutyCycle);
       }
 
       if (incomingType == 1) {                                                             // if 'Hall'
         dutyCycle = map(dutyCycleIncoming, minFreqHall, maxFreqHall, minSpeed, maxSpeed);  // map incoming range to this codes range.  Should match, but sense check...
         dutyCycle = map(dutyCycle, minFreqHall, 100, motorUpperLimit, motorLowerLimit);    // re-map the range to the motor limits.  Anything after xx% = 100, anything <xx% = lowest limit (highest speed)
 
-        PWM_Instance->setPWM(pinMotOutput, frequency, dutyCycle);
+        PWM_Instance->setPWM_manual(pinMotOutput, dutyCycle);
       }
-
-#if serialDebug
-      Serial.println(dutyCycle);
-#endif
-
+      DEBUG("PWM: %d", i);
       //dutyCycle = dutyCycleIncoming; //potentially re-introduce?
     }
-#endif
   }
 }
