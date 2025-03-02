@@ -11,14 +11,19 @@
 
 #define incomingType 1  // 0 = Can2Cluster; 1 = hall sensor  ** CAN CHANGE THIS **
 
+/*
 #define minFreqCAN 0    // min frequency for top speed using Can2Cluster - should match Can2Cluster _def ** CAN CHANGE THIS **
 #define maxFreqCAN 500  // max requency for top speed using Can2Cluster - should match Can2Cluster _def ** CAN CHANGE THIS **
 
 #define minFreqHall 0    // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
-#define maxFreqHall 500  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
+#define maxFreqHall 200  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
 
 #define minSpeed 0    // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
 #define maxSpeed 200  // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+*/
+
+#define canFactor 1 
+#define hallFactor 1
 
 #define motorLowerLimit 0   // minimum motor speed in % (motor doesn't gain speed if % < than this) ** CAN CHANGE THIS **
 #define motorUpperLimit 94  // minimum motor speed in % (motor doesn't spin if % > than this) ** CAN CHANGE THIS **
