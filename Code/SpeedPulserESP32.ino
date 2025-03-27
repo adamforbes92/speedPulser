@@ -23,6 +23,8 @@ void incomingHz() {                                               // Interrupt 0
   if (revolutionTime < 1000UL) return;                            // avoid divide by 0, also debounce, speed can't be over 60,000 was 1000UL
   dutyCycleIncoming = (60000000UL / revolutionTime) / 60;         // calculate
   previousMicros = presentMicros;
+
+  ledCounter++;
 }
 
 void setup() {
@@ -33,11 +35,21 @@ void setup() {
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (100% duty)
+
+#if hasNeedleSweep
+  needleSweep();
+#endif
 }
 
 void loop() {
+  if (ledCounter > averageFilter) {
+    ledOnboard = !ledOnboard;
+    ledCounter = 0;
+    digitalWrite(pinOnboardLED, ledOnboard);
+  }
+
   if (testSpeedo) {
-    testSpeed();  // if tempDuty > 0, set to fixed duty, else sweep up/down
+    testSpeed();  // if tempDuty > 0, set to fixed duty
   } else {
     if (dutyCycle != dutyCycleIncoming) {  // only update PWM IF speed has changed (can cause flicker otherwise)
       if (incomingType == 0) {             // if 'Can2Cluster'
@@ -55,7 +67,7 @@ void loop() {
 
           motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);  // set the duty of the motor from the calculations
           DEBUG_PRINTF("     FindClosetMatch: %d", dutyCycle);
-          
+
           rawCount = 0;     // reset the counter
           samples.clear();  // clear the array
         }
