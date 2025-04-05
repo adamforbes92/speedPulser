@@ -10,6 +10,7 @@ The last file on GitHub is the 'Installation Guide' and provides more detail.
 
 ## Basic Wiring
 Only three wires are required to operate the SpeedPulser:
+
 Inputs:
 > 12v ignition 
 > Ground
@@ -20,7 +21,7 @@ Outputs:
 
 Software Benefits:
 > Fully calibrated motor: Duty Percentage vs. Resulting Speed
-> Needle Sweep
+> Needle Sweep available
 
 ## Coupler Installation
 As the couplers are 3D printed, each coupler, motor housing and speedometer and the alignment of the sun and moon will all be unique and therefore final torque applied to the cluster will be different.  There is a potential for slight variances in final achieved speed.  Therefore, it is the end users requirement to install the coupler and ensure appropriate alignment.  Once installed, the 'highest' speed should be achieved and the potentiometer adjusted to calibrate.  
