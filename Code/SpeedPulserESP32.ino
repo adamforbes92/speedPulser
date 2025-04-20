@@ -65,6 +65,12 @@ void loop() {
           dutyCycle = samples.getAverage(averageFilter / 2);
           DEBUG_PRINTF("     getAverage: %d", dutyCycle);
 
+          if (speedOffsetPositive) {
+            dutyCycle = dutyCycle + speedOffset;
+          } else {
+            dutyCycle = dutyCycle - speedOffset;
+          }
+          
           dutyCycle = findClosestMatch(dutyCycle);             // find the closest final duty based on the incoming duty (use motor perfomance array)
           motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);  // set the duty of the motor from the calculations
           DEBUG_PRINTF("     FindClosetMatch: %d", dutyCycle);
@@ -86,6 +92,11 @@ void loop() {
           dutyCycle = samples.getAverage(averageFilter / 2);
           DEBUG_PRINTF("     getAverage: %d", dutyCycle);
 
+          if (speedOffsetPositive) {
+            dutyCycle = dutyCycle + speedOffset;
+          } else {
+            dutyCycle = dutyCycle - speedOffset;
+          }
           dutyCycle = findClosestMatch(dutyCycle);
 
           motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);

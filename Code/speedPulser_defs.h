@@ -4,7 +4,7 @@
 
 #define baudSerial 115200  // baud rate for debug serial
 #define serialDebug 0      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
-#define testSpeedo 0       // for testing only, vary final pwmFrequency for speed - disable on release(!) ** CAN CHANGE THIS **
+#define testSpeedo 1       // for testing only, vary final pwmFrequency for speed - disable on release(!) ** CAN CHANGE THIS **
 
 #define hasNeedleSweep 0  // for needle sweep ** CAN CHANGE THIS **
 #define sweepSpeed 18     // for needle sweep rate of change ** CAN CHANGE THIS **
@@ -18,8 +18,10 @@
 #define minFreqCAN 0     // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
 #define maxFreqCAN 200   // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
 
-#define minSpeed 0    // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
-#define maxSpeed 200  // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+#define minSpeed 0             // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+#define maxSpeed 200           // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+#define speedOffset 0          // for adjusting a FIXED speed offset - so the entire range is offset by X value
+#define speedOffsetPositive 1  // set to 1 for the above value to be ADDED, set to zero for the above value to be SUBTRACTED
 
 #define pinMotorOutput 2  // pin for motor PWM output - needs stepped up to 5v for the motor (NPN transistor on the board)
 #define pinSpeedInput 5   // interrupt supporting pin for speed input.  ESP32 C3 doesn't like them all, so if changing test this first(!)
