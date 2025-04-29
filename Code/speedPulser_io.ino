@@ -18,21 +18,23 @@ void basicInit() {
 }
 
 void testSpeed() {
+  // check to see if tempSpeed has a value.  IF it does (>0), set the speed using the 'find closest match' as a duty cycle
   if (tempSpeed > 0) {
-    dutyCycle = findClosestMatch(tempSpeed);  // find the closest final duty based on the incoming duty (use motor perfomance)
     DEBUG_PRINTF("Speed: %d", tempSpeed);
     DEBUG_PRINTLN("");
 
+    dutyCycle = findClosestMatch(tempSpeed);  // find the closest final duty based on the incoming duty (use motor perfomance)
+
     motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);  // set the duty of the motor from the calculations
-    delay(sweepSpeed * 10);
+    delay(sweepSpeed * 10);                              // just used to stop bombarbing the loop so quickly, just slow things down a bit...
   } else {
-    for (uint8_t i = 0; i < maxSpeed; i++) { // run through all available speeds and drive the motor
-      dutyCycle = findClosestMatch(i);  // find the closest final duty based on the incoming duty (use motor perfomance)
-      DEBUG_PRINTF("Speed: %d", i);
+    // tempSpeed == 0, therefore run through every single duty with a long delay to give you time to go between IDE & cluster and write down...
+    for (uint16_t i = 0; i < 385; i++) {  // run through all available speeds and drive the motor
+      DEBUG_PRINTF("Duty: %d", i);
       DEBUG_PRINTLN("");
 
-      motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);  // set the duty of the motor from the calculations
-      delay(sweepSpeed);
+      motorPWM->setPWM_manual(pinMotorOutput, i);  // set the duty of the motor from the calculations
+      delay(sweepSpeed * 300);
     }
   }
 }
