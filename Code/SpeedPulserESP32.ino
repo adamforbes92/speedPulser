@@ -2,7 +2,7 @@
 SpeedPulser - Forbes Automotive '25
 Analog speed converter suitable for VW MK1 & MK2 Golf.  Tested on Ford & Fiat clusters, the only change is the CAD model. Likely compatible with other marques. 
 
-Inputs are a 5v/12v square wave input from Can2Cluster or an OEM Hall Sensor and converts it into a PWM signal for a motor.  To get speeds low enough, the motor voltage needs reduced (hence the adjustable LM2596S)
+Inputs are a 5v/12v square wave input from Can2Cluster or an OEM Hall Sensor and converts it into a PWM signal for a motor.  To get speeds low enough, the motor voltage needs reduced (hence the adjustable LM2596S on the PCB)
 from 12v to ~9v.  This allows <10mph readings while still allowing high (160mph) readings.  Clusters supported are 1540 (rotations per mile) =~ (1540*160)/60 = 4100rpm
 
 Default support is for 12v hall sensors from 02J / 02M etc.  According to VW documentation, 1Hz = 1km/h.  Other marques may have different calibrations (adjustable in '_defs.h')
@@ -14,7 +14,7 @@ Uses 'ESP32_FastPWM' for easier PWM control compared to LEDc
 Uses 'RunningMedian' for capturing multiple input pulses to compare against.  Used to ignore 'outliars'
 
 To calibrate or adapt to other models:
-> Set 'testSpeed' to 1 & confirm tempSpeed = 0
+> Set 'testSpeed' to 1 & confirm tempSpeed = 0.  This will allow the motor to run through EVERY duty cycle from 0 to 385 (10-bit)
 > Monitor Serial Monitor and record in the Excel (under Resulting Speed) the running speed of the cluster at each duty cycle
   > Note: duty cycle is >'100%' due to default 10 bit resolution 
 > Copy each resulting speed into 'motorPerformance' 
@@ -24,11 +24,13 @@ All main adjustable variables are in '_defs.h'.
 
 V1.01 - initial release
 V1.02 - added onboard LED pulse to confirm incoming pulses
-V1.03 - added Fiat cluster - currently not working <40mph due to 'stickyness' of the cluster.  Consider changing base freq?
-  - todo
+V1.03 - added Fiat cluster - currently not working <40mph due to 'stickyness' of the cluster and motor not having enough bottom end torque.
+      - set to 110mph max (with lower motor voltage), allows full range calibration between 20kmph and 180kmh.  Any more and you're speeding anyway...
 V1.04 - added Ford cluster - actually much more linear compared to the VW one!
 V1.05 - added 'Global Speed Offset' to allow for motors installed with slight binding.  Will keep the plotted duty/speed curve but offset the WHOLE thing
-  - todo
+V1.06 - added 'durationReset' - to reset the motor/duty to 0 after xx ms.  This means when there is a break in pulses (either electrical issue or actually stopped, reset the motor)
+V1.07 - 
+todo - add WiFi connectivity for quick changing vars?
 */
 
 #include "speedPulser_defs.h"
@@ -44,6 +46,7 @@ void incomingHz() {                                               // Interrupt 0
   if (revolutionTime < 1000UL) return;                            // avoid divide by 0, also debounce, speed can't be over 60,000 was 1000UL
   dutyCycleIncoming = (60000000UL / revolutionTime) / 60;         // calculate
   previousMicros = presentMicros;
+  lastPulse = millis();
 
   ledCounter++;  // count LED counter - is used to flash onboard LED to show the presence of incoming pulses
 }
@@ -71,6 +74,9 @@ void loop() {
 
   // todo:
   // reset speed to zero if >durationReset
+  if (millis() - lastPulse > durationReset) {
+    motorPWM->setPWM_manual(pinMotorOutput, 0);
+  }
 
   // check to see if in 'test mode' (testSpeedo = 1)
   if (testSpeedo) {

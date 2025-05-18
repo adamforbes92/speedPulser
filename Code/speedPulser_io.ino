@@ -29,7 +29,7 @@ void testSpeed() {
     delay(sweepSpeed * 10);                              // just used to stop bombarbing the loop so quickly, just slow things down a bit...
   } else {
     // tempSpeed == 0, therefore run through every single duty with a long delay to give you time to go between IDE & cluster and write down...
-    for (uint16_t i = 0; i < 385; i++) {  // run through all available speeds and drive the motor
+    for (uint16_t i = 15; i < 385; i++) {  // run through all available speeds and drive the motor
       DEBUG_PRINTF("Duty: %d", i);
       DEBUG_PRINTLN("");
 
