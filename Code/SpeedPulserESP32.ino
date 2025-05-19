@@ -29,7 +29,7 @@ V1.03 - added Fiat cluster - currently not working <40mph due to 'stickyness' of
 V1.04 - added Ford cluster - actually much more linear compared to the VW one!
 V1.05 - added 'Global Speed Offset' to allow for motors installed with slight binding.  Will keep the plotted duty/speed curve but offset the WHOLE thing
 V1.06 - added 'durationReset' - to reset the motor/duty to 0 after xx ms.  This means when there is a break in pulses (either electrical issue or actually stopped, reset the motor)
-V1.07 - 
+V1.07 - added in 160mph clusters for MK2 Golfs (thanks to Charlie for calibration data!)
 todo - add WiFi connectivity for quick changing vars?
 */
 
@@ -110,6 +110,8 @@ void loop() {
                 dutyCycle = dutyCycle - speedOffset;
                 dutyCycle = findClosestMatch(dutyCycle);
                 motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+              } else {
+                motorPWM->setPWM_manual(pinMotorOutput, 0);
               }
             }
 
@@ -143,6 +145,8 @@ void loop() {
                 dutyCycle = dutyCycle - speedOffset;
                 dutyCycle = findClosestMatch(dutyCycle);
                 motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+              } else {
+                motorPWM->setPWM_manual(pinMotorOutput, 0);
               }
             }
 
