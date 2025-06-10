@@ -1,8 +1,8 @@
 /*
 SpeedPulser - Forbes Automotive '25
-Analog speed converter suitable for VW MK1 & MK2 Golf.  Tested on Ford & Fiat clusters, the only change is the CAD model. Likely compatible with other marques. 
+Analog speed converter suitable for mechnical drive speedometers.  Tested on VW, Ford & Fiat clusters, the only change is the CAD model. Likely compatible with other marques.  
 
-Inputs are a 5v/12v square wave input from Can2Cluster or an OEM Hall Sensor and converts it into a PWM signal for a motor.  To get speeds low enough, the motor voltage needs reduced (hence the adjustable LM2596S on the PCB)
+Inputs are a 5v/12v square wave input from Can2Cluster or an OEM Hall Sensor and converts it into a PWM signal for a BLDC motor.  To get speeds low enough, the motor voltage needs reduced (hence the adjustable LM2596S on the PCB)
 from 12v to ~9v.  This allows <10mph readings while still allowing high (160mph) readings.  Clusters supported are 1540 (rotations per mile) =~ (1540*160)/60 = 4100rpm
 
 Default support is for 12v hall sensors from 02J / 02M etc.  According to VW documentation, 1Hz = 1km/h.  Other marques may have different calibrations (adjustable in '_defs.h')
@@ -14,23 +14,15 @@ Uses 'ESP32_FastPWM' for easier PWM control compared to LEDc
 Uses 'RunningMedian' for capturing multiple input pulses to compare against.  Used to ignore 'outliars'
 
 To calibrate or adapt to other models:
-> Set 'testSpeed' to 1 & confirm tempSpeed = 0.  This will allow the motor to run through EVERY duty cycle from 0 to 385 (10-bit)
+> Set 'testSpeed' to 1 & confirm tempSpeed = 0.  This will allow the motor to run through EVERY duty cycle from 0 to 385 (10-bit).  Time change can be adjusted if 'too quick' to record changes
 > Monitor Serial Monitor and record in the Excel (under Resulting Speed) the running speed of the cluster at each duty cycle
   > Note: duty cycle is >'100%' due to default 10 bit resolution 
-> Copy each resulting speed into 'motorPerformance' 
+> Copy each resulting speed into new 'motorPerformance'
+> Comment out the current motorPerformance and uncomment yours
+> Adjust 'maxSpeed' to suit new range 
 > Done!
 
 All main adjustable variables are in '_defs.h'.
-
-V1.01 - initial release
-V1.02 - added onboard LED pulse to confirm incoming pulses
-V1.03 - added Fiat cluster - currently not working <40mph due to 'stickyness' of the cluster and motor not having enough bottom end torque.
-      - set to 110mph max (with lower motor voltage), allows full range calibration between 20kmph and 180kmh.  Any more and you're speeding anyway...
-V1.04 - added Ford cluster - actually much more linear compared to the VW one!
-V1.05 - added 'Global Speed Offset' to allow for motors installed with slight binding.  Will keep the plotted duty/speed curve but offset the WHOLE thing
-V1.06 - added 'durationReset' - to reset the motor/duty to 0 after xx ms.  This means when there is a break in pulses (either electrical issue or actually stopped, reset the motor)
-V1.07 - added in 160mph clusters for MK2 Golfs (thanks to Charlie for calibration data!)
-todo - add WiFi connectivity for quick changing vars?
 */
 
 #include "speedPulser_defs.h"
@@ -38,7 +30,7 @@ todo - add WiFi connectivity for quick changing vars?
 ESP32_FAST_PWM* motorPWM;                              // for PWM control.  ESP Boards need to be V2.0.17 - the latest version has known issues with LEDPWM(!)
 RunningMedian samples = RunningMedian(averageFilter);  // for calculating median samples - there can be 'hickups' in the incoming signal, this helps remove them(!)
 
-// interrupt routine for the incoming pulse
+// interrupt routine for the incoming pulse from opto
 void incomingHz() {                                               // Interrupt 0 service routine
   static unsigned long previousMicros = micros();                 // remember variable, initialize first time
   unsigned long presentMicros = micros();                         // read microseconds
@@ -48,17 +40,17 @@ void incomingHz() {                                               // Interrupt 0
   previousMicros = presentMicros;
   lastPulse = millis();
 
-  ledCounter++;  // count LED counter - is used to flash onboard LED to show the presence of incoming pulses
+  ledCounter++;                                                   // count LED counter - is used to flash onboard LED to show the presence of incoming pulses
 }
 
 void setup() {
 #ifdef serialDebug
-  Serial.begin(115200);
+  Serial.begin(baudSerial);
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
-  motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (100% duty)
+  motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
 
   if (hasNeedleSweep) {
     needleSweep();  // enable needle sweep (in _io.ino)
@@ -66,13 +58,12 @@ void setup() {
 }
 
 void loop() {
-  if (ledCounter > averageFilter) {
+  if (ledCounter > averageFilter) {           // only flip-flop the LED every time the filter is filled.  This will reduce the 'on' time of the LED making it easier to see!
     ledOnboard = !ledOnboard;                 // flip-flop the led trigger
-    digitalWrite(pinOnboardLED, ledOnboard);  // flash the LED to show the presence of incoming pulses
+    digitalWrite(pinOnboardLED, ledOnboard);  // toggle the LED to show the presence of incoming pulses
     ledCounter = 0;                           // reset the counter
   }
 
-  // todo:
   // reset speed to zero if >durationReset
   if (millis() - lastPulse > durationReset) {
     motorPWM->setPWM_manual(pinMotorOutput, 0);
@@ -138,11 +129,17 @@ void loop() {
 
             if (speedOffsetPositive) {
               dutyCycle = dutyCycle + speedOffset;
+              if (convertToMPH) {
+                dutyCycle = dutyCycle * mphFactor;
+              }
               dutyCycle = findClosestMatch(dutyCycle);
               motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
             } else {
               if (dutyCycle - speedOffset > 0) {
                 dutyCycle = dutyCycle - speedOffset;
+                if (convertToMPH) {
+                  dutyCycle = dutyCycle * mphFactor;
+                }
                 dutyCycle = findClosestMatch(dutyCycle);
                 motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
               } else {

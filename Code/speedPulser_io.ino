@@ -63,5 +63,6 @@ void needleSweep() {
     delay(sweepSpeed);
   }
   delay(sweepSpeed);
+  dutyCycle = 0;
   motorPWM->setPWM_manual(pinMotorOutput, 0);
 }
