@@ -24,6 +24,7 @@
 #define maxSpeed 200  // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
 
 #define speedOffset 0          // for adjusting a GLOBAL FIXED speed offset - so the entire range is offset by X value.  Might be easier to use this than the input max freq.
+#define speedMultiplier 1
 #define speedOffsetPositive 1  // set to 1 for the above value to be ADDED, set to zero for the above value to be SUBTRACTED
 
 #define convertToMPH 0  // for speedos that ONLY read in mph (and therefore the calibration is in mph), change KMH to find MPH

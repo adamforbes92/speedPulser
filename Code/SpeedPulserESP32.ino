@@ -40,7 +40,7 @@ void incomingHz() {                                               // Interrupt 0
   previousMicros = presentMicros;
   lastPulse = millis();
 
-  ledCounter++;                                                   // count LED counter - is used to flash onboard LED to show the presence of incoming pulses
+  ledCounter++;  // count LED counter - is used to flash onboard LED to show the presence of incoming pulses
 }
 
 void setup() {
@@ -94,11 +94,13 @@ void loop() {
 
             if (speedOffsetPositive) {
               dutyCycle = dutyCycle + speedOffset;
+              dutyCycle = dutyCycle * speedMultiplier;
               dutyCycle = findClosestMatch(dutyCycle);
               motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
             } else {
               if (dutyCycle - speedOffset > 0) {
                 dutyCycle = dutyCycle - speedOffset;
+                dutyCycle = dutyCycle * speedMultiplier;
                 dutyCycle = findClosestMatch(dutyCycle);
                 motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
               } else {
@@ -129,6 +131,7 @@ void loop() {
 
             if (speedOffsetPositive) {
               dutyCycle = dutyCycle + speedOffset;
+              dutyCycle = dutyCycle * speedMultiplier;
               if (convertToMPH) {
                 dutyCycle = dutyCycle * mphFactor;
               }
@@ -137,6 +140,7 @@ void loop() {
             } else {
               if (dutyCycle - speedOffset > 0) {
                 dutyCycle = dutyCycle - speedOffset;
+                dutyCycle = dutyCycle * speedMultiplier;
                 if (convertToMPH) {
                   dutyCycle = dutyCycle * mphFactor;
                 }

@@ -15,4 +15,5 @@ V1.06 - added 'durationReset' - to reset the motor/duty to 0 after xx ms.  This 
 V1.07 - added in 160mph clusters for MK2 Golfs (thanks to Charlie for calibration data!)
 V1.08 - missed reset dutyCycle to 0 after needle sweep - causes needle to hang slight above zero.
 V1.09 - added Martin Springell's MK1 Golf Calibration
+V1.10 - added speed multiplier
 */
