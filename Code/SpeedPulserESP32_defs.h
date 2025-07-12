@@ -1,31 +1,38 @@
 #define _PWM_LOGLEVEL_ 0
 #include "ESP32_FastPWM.h"
 #include <RunningMedian.h>
+#include <Arduino.h>
+#include "TickTwo.h"      // for repeated tasks
+#include <Preferences.h>  // for eeprom/remember settings
+#include <ESPUI.h>
+#include <WiFi.h>
+#include <ESPmDNS.h>
 
 // if you turn off power, unplug usb, replug usb then power it'll restart
-
 #define baudSerial 115200  // baud rate for serial feedback
 #define serialDebug 1      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
-#define testSpeedo 0       // for testing only, vary final pwmFrequency for speed - disable on release(!) ** CAN CHANGE THIS **
+#define serialDebugWifi 1  // for wifi feedback
+#define eepRefresh 2000    // EEPROM Refresh in ms
 
-#define hasNeedleSweep 0  // for needle sweep ** CAN CHANGE THIS **
-#define sweepSpeed 18     // for needle sweep rate of change (in ms) ** CAN CHANGE THIS **
+extern bool testSpeedo = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
+extern bool hasNeedleSweep = false;  // for needle sweep ** CAN CHANGE THIS **
+extern uint8_t sweepSpeed = 18;      // for needle sweep rate of change (in ms) ** CAN CHANGE THIS **
 
 #define incomingType 1      // 0 = Can2Cluster; 1 = hall sensor  ** CAN CHANGE THIS **
-#define averageFilter 6     // number of samples to take to average/remove erraticness from freq. changes.  Higher number, more samples ** CAN CHANGE THIS **
+#define averageFilter 12    // number of samples to take to average/remove erraticness from freq. changes.  Higher number, more samples ** CAN CHANGE THIS **
 #define durationReset 1500  // duration of 'last sample' before reset speed back to zero
 
-#define minFreqHall 0    // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
-#define maxFreqHall 200  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
-#define minFreqCAN 0     // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
-#define maxFreqCAN 200   // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
+extern uint16_t minFreqHall = 0;    // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
+extern uint16_t maxFreqHall = 200;  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
+extern uint16_t minFreqCAN = 0;     // min frequency for top speed using the 02J / 02M hall sensor  ** CAN CHANGE THIS **
+extern uint16_t maxFreqCAN = 200;   // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
 
-#define minSpeed 0    // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
-#define maxSpeed 200  // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+extern uint16_t minSpeed = 0;    // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+extern uint16_t maxSpeed = 200;  // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
 
-#define speedOffset 0          // for adjusting a GLOBAL FIXED speed offset - so the entire range is offset by X value.  Might be easier to use this than the input max freq.
+extern uint8_t speedOffset = 0;  // for adjusting a GLOBAL FIXED speed offset - so the entire range is offset by X value.  Might be easier to use this than the input max freq.
 #define speedMultiplier 1
-#define speedOffsetPositive 1  // set to 1 for the above value to be ADDED, set to zero for the above value to be SUBTRACTED
+extern bool speedOffsetPositive = true;  // set to 1 for the above value to be ADDED, set to zero for the above value to be SUBTRACTED
 
 #define convertToMPH 0  // for speedos that ONLY read in mph (and therefore the calibration is in mph), change KMH to find MPH
 #define mphFactor 0.621371
@@ -35,6 +42,9 @@
 #define pinDirection 10   // motor direction pin (currently unused) but here for future revisions
 #define pinOnboardLED 8   // for feedback for input checking / flash LED on input.  ESP32 C3 is Pin 8
 
+#define wifiHostName "SpeedPulser" // the WiFi name 
+
+// if serialDebug is on, allow Serial talkback
 #ifdef serialDebug
 #define DEBUG_PRINT(x) Serial.print(x)
 #define DEBUG_PRINTLN(x) Serial.println(x)
@@ -46,7 +56,8 @@
 #endif
 
 extern unsigned long dutyCycleIncoming = 0;  // Duty Cycle % coming in from Can2Cluster or Hall
-extern long tempSpeed = 0;                   // for testing only, set fixed speed in kmh.  Can set to 0 to speed up / slow down on repeat with testSpeed enabled
+extern long tempSpeed = 100;                 // for testing only, set fixed speed in kmh.  Can set to 0 to speed up / slow down on repeat with testSpeed enabled
+extern bool tempNeedleSweep = false;
 extern long pwmFrequency = 10000;            // PWM Hz (motor supplied is 10kHz)
 extern long dutyCycle = 0;                   // starting / default Hz: 0% is motor 'off'
 extern int pwmResolution = 10;               // number of bits for motor resolution.  Can use 8 or 10, although 8 makes it a bit 'jumpy'
@@ -60,7 +71,7 @@ extern unsigned long lastPulse = 0;
 // for 10 bit resolution - VW MK1/MK2 - 120mph cluster; by Martin Springell
 //uint8_t motorPerformance[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 26, 28, 31, 32, 33, 34, 35, 37, 38, 39, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 53, 54, 55, 56, 56, 57, 58, 59, 60, 61, 62, 63, 64, 64, 65, 67, 68, 68, 69, 70, 71, 72, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 84, 84, 85, 86, 87, 88, 89, 90, 90, 91, 92, 92, 93, 93, 94, 95, 96, 97, 97, 98, 99, 100, 100, 100, 101, 101, 102, 103, 104, 105, 105, 106, 106, 107, 108, 109, 109, 109, 109, 110, 111, 112, 113, 113, 113, 114, 114, 115, 116, 117, 117, 117, 118, 118, 119, 120, 121, 121, 122, 122, 122, 123, 124, 125, 125, 125, 126, 126, 126, 127, 128, 128, 129, 129, 129, 130, 130, 130, 130, 131, 132, 132, 133, 134, 134, 134, 134, 135, 136, 137, 137, 137, 138, 138, 138, 139, 140, 140, 140, 141, 141, 141, 142, 142, 142, 142, 143, 144, 145, 145, 145, 145, 146, 146, 146, 147, 148, 148, 148, 149, 149, 149, 150, 150, 150, 150, 151, 151, 152, 153, 153, 153, 153, 154, 154, 154, 154, 155, 156, 156, 156, 157, 157, 157, 157, 158, 158, 158, 159, 159, 160, 161, 161, 161, 161, 161, 161, 161, 161, 162, 162, 162, 163, 163, 164, 164, 164, 164, 165, 165, 165, 165, 166, 166, 167, 167, 167, 168, 169, 169, 169, 169, 169, 169, 169, 169, 169, 170, 170, 171, 171, 172, 172, 172, 172, 173, 173, 173, 173, 173, 174, 174, 174, 175, 175, 176, 176, 176, 176, 177, 177, 177, 177, 177, 177, 177, 177, 178, 178, 178, 179, 179, 179, 179, 179, 180, 180, 180, 180, 180, 181, 181, 181, 181, 181, 182, 182, 182, 182, 182, 183, 183, 183, 183, 183, 183, 184, 184, 184, 184, 185, 185, 185, 185, 185, 185, 186, 186, 186, 186, 187, 187, 187, 188, 188, 188, 188, 188, 188, 188, 189, 189, 190, 190, 190, 190, 191, 191, 191, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 192, 193, 193, 193, 193, 193, 193, 193, 193, 193, 193, 193, 193, 193 };
 
-// for 10 bit resolution - VW MK1/MK2 - 140mph cluster
+// for 10 bit resolution - VW MK1/MK2 - 120mph cluster; by Forbes Automotive
 uint8_t motorPerformance[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 26, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 43, 44, 45, 48, 50, 52, 52, 53, 54, 55, 56, 57, 57, 59, 59, 61, 61, 62, 62, 63, 64, 65, 67, 67, 69, 69, 70, 71, 72, 73, 74, 75, 75, 76, 76, 76, 77, 77, 77, 78, 78, 78, 78, 79, 79, 80, 81, 82, 83, 84, 85, 85, 85, 86, 87, 89, 90, 91, 91, 92, 92, 93, 95, 95, 96, 98, 99, 100, 101, 102, 102, 104, 105, 105, 107, 109, 110, 110, 111, 112, 112, 114, 114, 114, 115, 116, 116, 117, 119, 120, 121, 121, 122, 122, 122, 125, 125, 125, 126, 126, 127, 127, 128, 129, 130, 130, 130, 131, 131, 131, 131, 132, 132, 132, 132, 133, 134, 135, 135, 137, 137, 138, 138, 138, 139, 139, 140, 140, 140, 141, 141, 141, 142, 142, 143, 143, 144, 145, 145, 145, 146, 147, 148, 148, 148, 149, 149, 150, 150, 150, 151, 151, 151, 151, 151, 152, 153, 154, 155, 155, 155, 156, 156, 156, 156, 157, 157, 158, 159, 159, 159, 159, 159, 160, 160, 160, 160, 160, 162, 162, 162, 162, 162, 162, 163, 163, 164, 164, 165, 165, 166, 166, 166, 166, 167, 167, 167, 167, 168, 168, 168, 169, 170, 170, 171, 171, 171, 172, 172, 172, 172, 172, 173, 173, 174, 174, 175, 176, 176, 176, 176, 176, 176, 177, 177, 178, 178, 178, 179, 179, 179, 179, 179, 179, 179, 179, 180, 180, 180, 180, 180, 180, 181, 181, 181, 181, 182, 182, 182, 183, 183, 184, 184, 184, 184, 184, 184, 185, 185, 185, 185, 185, 185, 185, 185, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 187, 188, 188, 188, 188, 189, 189, 189, 190, 190, 191, 191, 191, 191, 191, 191, 192, 192, 192, 192, 192, 193, 193, 193, 193, 194, 194, 194, 194, 195, 195, 195, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 197, 198, 198, 198, 198, 199, 199, 199, 199, 199, 200, 200, 200, 200, 200 };
 
 // for 10 bit resolution - VW MK1/MK2 - 160mph cluster
@@ -83,3 +94,29 @@ extern uint8_t incomingFreqMedian[] = { 0, 0, 0, 0, 0 };
 
 extern bool ledOnboard = false;
 extern int ledCounter = 0;
+
+//Function Prototypes
+extern void connectWifi();
+extern void setupUI();
+extern void textCallback(Control *sender, int type);
+extern void generalCallback(Control *sender, int type);
+extern void updateCallback(Control *sender, int type);
+extern void getTimeCallback(Control *sender, int type);
+extern void graphAddCallback(Control *sender, int type);
+extern void graphClearCallback(Control *sender, int type);
+extern void randomString(char *buf, int len);
+extern void extendedCallback(Control *sender, int type, void *param);
+
+extern void readEEP();
+extern void writeEEP();
+
+//UI handles
+uint16_t bool_NeedleSweep, int16_sweepSpeed;
+uint16_t bool_testSpeedo, int16_tempSpeed;
+
+uint16_t bool_positiveOffset, int16_speedOffset;
+uint16_t int16_minSpeed, int16_maxSpeed, int16_minHall, int16_maxHall, int16_minCAN, int16_maxCAN;
+
+uint16_t graph;
+uint16_t mainTime;
+volatile bool updates = false;

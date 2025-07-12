@@ -21,20 +21,41 @@ void testSpeed() {
   // check to see if tempSpeed has a value.  IF it does (>0), set the speed using the 'find closest match' as a duty cycle
   if (tempSpeed > 0) {
     DEBUG_PRINTF("Speed: %d", tempSpeed);
+    if (speedOffsetPositive) {
+      dutyCycle = tempSpeed + speedOffset;
+      dutyCycle = dutyCycle * speedMultiplier;
+      if (convertToMPH) {
+        dutyCycle = dutyCycle * mphFactor;
+      }
+      dutyCycle = findClosestMatch(dutyCycle);
+      motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+    } else {
+      if (tempSpeed - speedOffset > 0) {
+        dutyCycle = tempSpeed - speedOffset;
+        dutyCycle = dutyCycle * speedMultiplier;
+        if (convertToMPH) {
+          dutyCycle = dutyCycle * mphFactor;
+        }
+        dutyCycle = findClosestMatch(dutyCycle);
+        motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+      } else {
+        motorPWM->setPWM_manual(pinMotorOutput, 0);
+      }
+    }
+    DEBUG_PRINTF(".  Adjusted Speed: %d", dutyCycle);
     DEBUG_PRINTLN("");
-
-    dutyCycle = findClosestMatch(tempSpeed);  // find the closest final duty based on the incoming duty (use motor perfomance)
-
-    motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);  // set the duty of the motor from the calculations
-    delay(sweepSpeed * 10);                              // just used to stop bombarbing the loop so quickly, just slow things down a bit...
   } else {
     // tempSpeed == 0, therefore run through every single duty with a long delay to give you time to go between IDE & cluster and write down...
-    for (uint16_t i = 15; i < 385; i++) {  // run through all available speeds and drive the motor
+    for (uint16_t i = 14; i < 385; i++) {  // run through all available speeds and drive the motor
       DEBUG_PRINTF("Duty: %d", i);
       DEBUG_PRINTLN("");
 
+      if (tempSpeed > 0) {
+        i = 385;
+      }
+
       motorPWM->setPWM_manual(pinMotorOutput, i);  // set the duty of the motor from the calculations
-      delay(sweepSpeed * 300);
+      delay(sweepSpeed * 500);
     }
   }
 }

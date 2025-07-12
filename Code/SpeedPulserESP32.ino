@@ -25,10 +25,12 @@ To calibrate or adapt to other models:
 All main adjustable variables are in '_defs.h'.
 */
 
-#include "speedPulser_defs.h"
+#include "SpeedPulserESP32_defs.h"
 
 ESP32_FAST_PWM* motorPWM;                              // for PWM control.  ESP Boards need to be V2.0.17 - the latest version has known issues with LEDPWM(!)
 RunningMedian samples = RunningMedian(averageFilter);  // for calculating median samples - there can be 'hickups' in the incoming signal, this helps remove them(!)
+TickTwo tickEEP(writeEEP, eepRefresh);
+Preferences pref;
 
 // interrupt routine for the incoming pulse from opto
 void incomingHz() {                                               // Interrupt 0 service routine
@@ -49,15 +51,23 @@ void setup() {
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
+  readEEP();        // read the EEPROM for previous states
+  tickEEP.start();  // begin ticker for the EEPROM
+
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
 
   if (hasNeedleSweep) {
     needleSweep();  // enable needle sweep (in _io.ino)
   }
+
+  connectWifi();         // enable / start WiFi
+  WiFi.setSleep(false);  //For the ESP32: turn off sleeping to increase UI responsivness (at the cost of power use)
+  setupUI();             // setup wifi user interface
 }
 
 void loop() {
+  tickEEP.update();                           // refresh the EEP ticker
   if (ledCounter > averageFilter) {           // only flip-flop the LED every time the filter is filled.  This will reduce the 'on' time of the LED making it easier to see!
     ledOnboard = !ledOnboard;                 // flip-flop the led trigger
     digitalWrite(pinOnboardLED, ledOnboard);  // toggle the LED to show the presence of incoming pulses
@@ -66,7 +76,14 @@ void loop() {
 
   // reset speed to zero if >durationReset
   if (millis() - lastPulse > durationReset) {
-    motorPWM->setPWM_manual(pinMotorOutput, 0);
+    if (!testSpeedo) {
+      motorPWM->setPWM_manual(pinMotorOutput, 0);
+    }
+  }
+
+  if (tempNeedleSweep) {
+    needleSweep();
+    tempNeedleSweep = false;
   }
 
   // check to see if in 'test mode' (testSpeedo = 1)
@@ -126,7 +143,8 @@ void loop() {
           }
 
           if (rawCount >= averageFilter) {
-            dutyCycle = samples.getAverage(averageFilter / 2);
+            dutyCycle = samples.getMedian();
+            //dutyCycle = samples.getAverage();
             DEBUG_PRINTF("     getAverageHall: %d", dutyCycle);
 
             if (speedOffsetPositive) {
