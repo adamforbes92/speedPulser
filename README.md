@@ -22,6 +22,10 @@ Outputs:
 Software Benefits:
 > Fully calibrated motor: Duty Percentage vs. Resulting Speed
 > Needle Sweep available
+> WiFi Enabled
+
+## WiFi Support
+WiFi now enabled for easier on-the-fly setup.  Needle sweep & calibration can be done without needing to mess with complicated firmware.
 
 ## Coupler Installation
 As the couplers are 3D printed, each coupler, motor housing and speedometer and the alignment of the sun and moon will all be unique and therefore final torque applied to the cluster will be different.  There is a potential for slight variances in final achieved speed.  Therefore, it is the end users requirement to install the coupler and ensure appropriate alignment.  Once installed, the 'highest' speed should be achieved and the potentiometer adjusted to calibrate.  
