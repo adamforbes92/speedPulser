@@ -13,6 +13,7 @@
 #define serialDebug 1      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
 #define serialDebugWifi 1  // for wifi feedback
 #define eepRefresh 2000    // EEPROM Refresh in ms
+#define wifiDisable 30000       // turn off WiFi in ms
 
 extern bool testSpeedo = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
 extern bool hasNeedleSweep = false;  // for needle sweep ** CAN CHANGE THIS **
@@ -42,7 +43,7 @@ extern bool speedOffsetPositive = true;  // set to 1 for the above value to be A
 #define pinDirection 10   // motor direction pin (currently unused) but here for future revisions
 #define pinOnboardLED 8   // for feedback for input checking / flash LED on input.  ESP32 C3 is Pin 8
 
-#define wifiHostName "SpeedPulser" // the WiFi name 
+#define wifiHostName "SpeedPulser"  // the WiFi name
 
 // if serialDebug is on, allow Serial talkback
 #ifdef serialDebug
@@ -58,9 +59,9 @@ extern bool speedOffsetPositive = true;  // set to 1 for the above value to be A
 extern unsigned long dutyCycleIncoming = 0;  // Duty Cycle % coming in from Can2Cluster or Hall
 extern long tempSpeed = 100;                 // for testing only, set fixed speed in kmh.  Can set to 0 to speed up / slow down on repeat with testSpeed enabled
 extern bool tempNeedleSweep = false;
-extern long pwmFrequency = 10000;            // PWM Hz (motor supplied is 10kHz)
-extern long dutyCycle = 0;                   // starting / default Hz: 0% is motor 'off'
-extern int pwmResolution = 10;               // number of bits for motor resolution.  Can use 8 or 10, although 8 makes it a bit 'jumpy'
+extern long pwmFrequency = 10000;  // PWM Hz (motor supplied is 10kHz)
+extern long dutyCycle = 0;         // starting / default Hz: 0% is motor 'off'
+extern int pwmResolution = 10;     // number of bits for motor resolution.  Can use 8 or 10, although 8 makes it a bit 'jumpy'
 
 extern int rawCount = 0;  // counter for pulses incoming
 extern unsigned long lastPulse = 0;
@@ -97,6 +98,7 @@ extern int ledCounter = 0;
 
 //Function Prototypes
 extern void connectWifi();
+extern void disconnectWifi();
 extern void setupUI();
 extern void textCallback(Control *sender, int type);
 extern void generalCallback(Control *sender, int type);
@@ -116,6 +118,7 @@ uint16_t bool_testSpeedo, int16_tempSpeed;
 
 uint16_t bool_positiveOffset, int16_speedOffset;
 uint16_t int16_minSpeed, int16_maxSpeed, int16_minHall, int16_maxHall, int16_minCAN, int16_maxCAN;
+int label_speed;
 
 uint16_t graph;
 uint16_t mainTime;

@@ -30,6 +30,7 @@ All main adjustable variables are in '_defs.h'.
 ESP32_FAST_PWM* motorPWM;                              // for PWM control.  ESP Boards need to be V2.0.17 - the latest version has known issues with LEDPWM(!)
 RunningMedian samples = RunningMedian(averageFilter);  // for calculating median samples - there can be 'hickups' in the incoming signal, this helps remove them(!)
 TickTwo tickEEP(writeEEP, eepRefresh);
+TickTwo tickWiFi(disconnectWifi, wifiDisable);             // timer for disconnecting wifi after 30s if no connections - saves power
 Preferences pref;
 
 // interrupt routine for the incoming pulse from opto
@@ -51,8 +52,9 @@ void setup() {
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
-  readEEP();        // read the EEPROM for previous states
-  tickEEP.start();  // begin ticker for the EEPROM
+  readEEP();             // read the EEPROM for previous states
+  tickEEP.start();       // begin ticker for the EEPROM
+  tickWiFi.start();      // begin ticker for the WiFi (to turn off after 60s)
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
@@ -67,7 +69,9 @@ void setup() {
 }
 
 void loop() {
-  tickEEP.update();                           // refresh the EEP ticker
+  tickEEP.update();       // refresh the EEP ticker
+  tickWiFi.update();      // refresh the WiFi ticker
+
   if (ledCounter > averageFilter) {           // only flip-flop the LED every time the filter is filled.  This will reduce the 'on' time of the LED making it easier to see!
     ledOnboard = !ledOnboard;                 // flip-flop the led trigger
     digitalWrite(pinOnboardLED, ledOnboard);  // toggle the LED to show the presence of incoming pulses
@@ -78,6 +82,7 @@ void loop() {
   if (millis() - lastPulse > durationReset) {
     if (!testSpeedo) {
       motorPWM->setPWM_manual(pinMotorOutput, 0);
+      ESPUI.updateLabel(label_speed, "Speed: 0");
     }
   }
 
@@ -108,6 +113,9 @@ void loop() {
           if (rawCount >= averageFilter) {
             dutyCycle = samples.getAverage(averageFilter / 2);
             DEBUG_PRINTF("     getAverageC2C: %d", dutyCycle);
+            char buf[32];
+            sprintf(buf, "Speed: %d", dutyCycle);
+            ESPUI.updateLabel(label_speed, String(buf));
 
             if (speedOffsetPositive) {
               dutyCycle = dutyCycle + speedOffset;
@@ -146,6 +154,9 @@ void loop() {
             dutyCycle = samples.getMedian();
             //dutyCycle = samples.getAverage();
             DEBUG_PRINTF("     getAverageHall: %d", dutyCycle);
+            char buf[32];
+            sprintf(buf, "Speed: %d", dutyCycle);
+            ESPUI.updateLabel(label_speed, String(buf));
 
             if (speedOffsetPositive) {
               dutyCycle = dutyCycle + speedOffset;
@@ -177,6 +188,7 @@ void loop() {
       }
 
       dutyCycle = dutyCycleIncoming;  // re-introduce?  Could do some filter on big changes?  May skip over genuine changes though?
+
       DEBUG_PRINTLN("");
     }
   }

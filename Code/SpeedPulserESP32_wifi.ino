@@ -47,6 +47,9 @@ void setupUI() {
   ESPUI.addControl(Max, "", "400", Dark, int16_maxCAN);
   ESPUI.addControl(Button, "Reset", "Reset", Dark, tabAdvanced, extendedCallback, (void *)14);
 
+  ESPUI.addControl(Separator, "Incoming Speed:", "", Dark, tabAdvanced);
+  label_speed = ESPUI.addControl(Label, "", "0", Dark, tabAdvanced, generalCallback);
+
   //Finally, start up the UI.
   //This should only be called once we are connected to WiFi.
   ESPUI.begin(wifiHostName);
@@ -202,4 +205,15 @@ void randomString(char *buf, int len) {
   for (auto i = 0; i < len - 1; i++)
     buf[i] = random(0, 26) + 'A';
   buf[len - 1] = '\0';
+}
+
+void disconnectWifi() {
+  DEBUG_PRINTF("Number of connections: ");
+  DEBUG_PRINTLN(WiFi.softAPgetStationNum());
+
+  if (WiFi.softAPgetStationNum() == 0) {
+    DEBUG_PRINTLN("No connections, turning off");
+    WiFi.disconnect(true, false);
+    WiFi.mode(WIFI_OFF);
+  }
 }
