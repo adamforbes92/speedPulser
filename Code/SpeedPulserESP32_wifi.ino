@@ -181,10 +181,11 @@ void extendedCallback(Control *sender, int type, void *param) {
 void connectWifi() {
   int connect_timeout;
 
-  WiFi.setHostname(wifiHostName);
+  WiFi.hostname(wifiHostName);
   Serial.println("Begin wifi...");
 
   Serial.println("\nCreating access point...");
+  WiFi.setTxPower(WIFI_POWER_8_5dBm); 
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(wifiHostName);

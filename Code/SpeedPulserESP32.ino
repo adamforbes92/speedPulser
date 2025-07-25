@@ -30,7 +30,7 @@ All main adjustable variables are in '_defs.h'.
 ESP32_FAST_PWM* motorPWM;                              // for PWM control.  ESP Boards need to be V2.0.17 - the latest version has known issues with LEDPWM(!)
 RunningMedian samples = RunningMedian(averageFilter);  // for calculating median samples - there can be 'hickups' in the incoming signal, this helps remove them(!)
 TickTwo tickEEP(writeEEP, eepRefresh);
-TickTwo tickWiFi(disconnectWifi, wifiDisable);             // timer for disconnecting wifi after 30s if no connections - saves power
+TickTwo tickWiFi(disconnectWifi, wifiDisable);  // timer for disconnecting wifi after 30s if no connections - saves power
 Preferences pref;
 
 // interrupt routine for the incoming pulse from opto
@@ -52,9 +52,9 @@ void setup() {
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
-  readEEP();             // read the EEPROM for previous states
-  tickEEP.start();       // begin ticker for the EEPROM
-  tickWiFi.start();      // begin ticker for the WiFi (to turn off after 60s)
+  readEEP();         // read the EEPROM for previous states
+  tickEEP.start();   // begin ticker for the EEPROM
+  tickWiFi.start();  // begin ticker for the WiFi (to turn off after 60s)
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
@@ -66,11 +66,12 @@ void setup() {
   connectWifi();         // enable / start WiFi
   WiFi.setSleep(false);  //For the ESP32: turn off sleeping to increase UI responsivness (at the cost of power use)
   setupUI();             // setup wifi user interface
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
 }
 
 void loop() {
-  tickEEP.update();       // refresh the EEP ticker
-  tickWiFi.update();      // refresh the WiFi ticker
+  tickEEP.update();   // refresh the EEP ticker
+  tickWiFi.update();  // refresh the WiFi ticker
 
   if (ledCounter > averageFilter) {           // only flip-flop the LED every time the filter is filled.  This will reduce the 'on' time of the LED making it easier to see!
     ledOnboard = !ledOnboard;                 // flip-flop the led trigger
