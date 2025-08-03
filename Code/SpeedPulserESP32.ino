@@ -80,8 +80,12 @@ void loop() {
   }
 
   // reset speed to zero if >durationReset
-  if (millis() - lastPulse > durationReset) {
+  if (((millis() + 10) - lastPulse) > durationReset) {
     if (!testSpeedo) {
+      DEBUG_PRINTLN("No input, resetting!");
+      DEBUG_PRINTLN(millis());
+      DEBUG_PRINTLN(lastPulse);
+
       motorPWM->setPWM_manual(pinMotorOutput, 0);
       ESPUI.updateLabel(label_speed, "Speed: 0");
     }

@@ -17,4 +17,6 @@ V1.08 - missed reset dutyCycle to 0 after needle sweep - causes needle to hang s
 V1.09 - added Martin Springell's MK1 Golf Calibration
 V1.10 - added speed multiplier
 V1.11 - added WiFi settings page - saves remote coding
+V1.12 - Luke Nicholson found a bug where speed randomly drops to zero.  Apparently (millis() - lastPulse) > durationReset) causes a fail IF millis == lastPulse.  Added millis()+10 to combat it.  No issues.
+
 */
