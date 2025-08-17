@@ -55,7 +55,7 @@ void testSpeed() {
       }
 
       motorPWM->setPWM_manual(pinMotorOutput, i);  // set the duty of the motor from the calculations
-      delay(sweepSpeed * 500);
+      delay(sweepSpeed * 300);
     }
   }
 }

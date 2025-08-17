@@ -185,17 +185,17 @@ void connectWifi() {
   Serial.println("Begin wifi...");
 
   Serial.println("\nCreating access point...");
-  WiFi.setTxPower(WIFI_POWER_8_5dBm); 
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(wifiHostName);
 
-  connect_timeout = 20;
+  /*connect_timeout = 20;
   do {
     delay(250);
     Serial.print(",");
     connect_timeout--;
-  } while (connect_timeout);
+  } while (connect_timeout);*/
 }
 
 void textCallback(Control *sender, int type) {
