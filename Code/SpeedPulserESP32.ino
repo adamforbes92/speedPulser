@@ -5,10 +5,10 @@ Analog speed converter suitable for mechnical drive speedometers.  Tested on VW,
 Inputs are a 5v/12v square wave input from Can2Cluster or an OEM Hall Sensor and converts it into a PWM signal for a BLDC motor.  To get speeds low enough, the motor voltage needs reduced (hence the adjustable LM2596S on the PCB)
 from 12v to ~9v.  This allows <10mph readings while still allowing high (160mph) readings.  Clusters supported are 1540 (rotations per mile) =~ (1540*160)/60 = 4100rpm
 
-Default support is for 12v hall sensors from 02J / 02M etc.  According to VW documentation, 1Hz = 1km/h.  Other marques may have different calibrations (adjustable in '_defs.h')
+Default support is for 12v hall sensors from 02J / 02M etc: 1Hz = 1km/h.  Other marques may have different calibrations (adjustable in '_defs.h')
 
 Motor performance plotted with Duty Cycle & Resulting Speed.  Basic Excel located in GitHub for reference - the motor isn't linear so it cannot be assumed that x*y duty = z speed(!)
-LED PWM can use various 'bits' for resolution.  8 bit results in a poorer resolution, therefore the speed can be 'jumpy'.  Default is 10 bit which makes it smoother.  Both are available.
+LED PWM can use various 'bits' for resolution.  8 bit results in a poorer resolution, therefore the speed can be 'jumpy'.  Default is 10 bit which makes it smoother.  Both are available but 10 bit is default.
 
 Uses 'ESP32_FastPWM' for easier PWM control compared to LEDc
 Uses 'RunningMedian' for capturing multiple input pulses to compare against.  Used to ignore 'outliars'
@@ -48,11 +48,12 @@ void incomingHz() {                                               // Interrupt 0
 
 void setup() {
 #ifdef serialDebug
+  delay(2000);
   Serial.begin(baudSerial);
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
-  readEEP();         // read the EEPROM for previous states
+  readEEP();         // read the EEPROM for previous saved states
   tickEEP.start();   // begin ticker for the EEPROM
   tickWiFi.start();  // begin ticker for the WiFi (to turn off after 60s)
 
@@ -63,10 +64,13 @@ void setup() {
     needleSweep();  // enable needle sweep (in _io.ino)
   }
 
-  connectWifi();         // enable / start WiFi
-  WiFi.setSleep(false);  //For the ESP32: turn off sleeping to increase UI responsivness (at the cost of power use)
-  setupUI();             // setup wifi user interface
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  connectWifi();                       // enable / start WiFi
+  WiFi.setSleep(false);                //For the ESP32: turn off sleeping to increase UI responsivness (at the cost of power use)
+  setupUI();                           // setup wifi user interface
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);  // some C3 boards require a lower Tx power otherwise it won't appear
+
+  updateLabels();
+  updateMotorArray();
 }
 
 void loop() {
@@ -82,10 +86,6 @@ void loop() {
   // reset speed to zero if >durationReset
   if (((millis() + 10) - lastPulse) > durationReset) {
     if (!testSpeedo) {
-      DEBUG_PRINTLN("No input, resetting!");
-      DEBUG_PRINTLN(millis());
-      DEBUG_PRINTLN(lastPulse);
-
       motorPWM->setPWM_manual(pinMotorOutput, 0);
       ESPUI.updateLabel(label_speed, "Speed: 0");
     }
@@ -96,6 +96,10 @@ void loop() {
     tempNeedleSweep = false;
   }
 
+  if (updateMotorPerformance) {
+    updateMotorArray();
+  }
+
   // check to see if in 'test mode' (testSpeedo = 1)
   if (testSpeedo) {
     testSpeed();  // if tempSpeed > 0, set to fixed duty, else, run through available duties
@@ -103,99 +107,51 @@ void loop() {
 
   if (!testSpeedo) {
     if (dutyCycle != dutyCycleIncoming) {  // only update PWM IF speed has changed (can cause flicker otherwise)
-      switch (incomingType) {
-        case 0:  // can2cluster input
-          DEBUG_PRINTF("     DutyIncomingC2C: %d", dutyCycleIncoming);
-          dutyCycleIncoming = map(dutyCycleIncoming, minFreqCAN, maxFreqCAN, minSpeed, maxSpeed);  // map incoming range to this codes range.  Max Hz should match Max Speed - i.e., 200Hz = 200kmh, or 500Hz = 200kmh...
-          DEBUG_PRINTF("     DutyPostProc1C2C: %d", dutyCycle);
+      DEBUG_PRINTF("     DutyIncomingHall: %d", dutyCycleIncoming);
+      dutyCycleIncoming = map(dutyCycleIncoming, 0, maxFreqHall, 0, maxSpeed);  // map incoming range to this codes range.  Max Hz should match Max Speed - i.e., 200Hz = 200kmh, or 500Hz = 200kmh...
+      DEBUG_PRINTF("     DutyPostProc1Hall: %d", dutyCycle);
 
-          // build up the array to get the average of pulsers and ignore outliars
-          if (rawCount < averageFilter) {
-            samples.add(dutyCycleIncoming);
-            rawCount++;
-          }
-
-          if (rawCount >= averageFilter) {
-            dutyCycle = samples.getAverage(averageFilter / 2);
-            DEBUG_PRINTF("     getAverageC2C: %d", dutyCycle);
-            char buf[32];
-            sprintf(buf, "Speed: %d", dutyCycle);
-            ESPUI.updateLabel(label_speed, String(buf));
-
-            if (speedOffsetPositive) {
-              dutyCycle = dutyCycle + speedOffset;
-              dutyCycle = dutyCycle * speedMultiplier;
-              dutyCycle = findClosestMatch(dutyCycle);
-              motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
-            } else {
-              if (dutyCycle - speedOffset > 0) {
-                dutyCycle = dutyCycle - speedOffset;
-                dutyCycle = dutyCycle * speedMultiplier;
-                dutyCycle = findClosestMatch(dutyCycle);
-                motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
-              } else {
-                motorPWM->setPWM_manual(pinMotorOutput, 0);
-              }
-            }
-
-            DEBUG_PRINTF("     FindClosetMatchC2C: %d", dutyCycle);
-
-            rawCount = 0;     // reset the counter
-            samples.clear();  // clear the array
-          }
-          break;
-
-        case 1:  // hall sensor input
-          DEBUG_PRINTF("     DutyIncomingHall: %d", dutyCycleIncoming);
-          dutyCycleIncoming = map(dutyCycleIncoming, minFreqHall, maxFreqHall, minSpeed, maxSpeed);  // map incoming range to this codes range.  Max Hz should match Max Speed - i.e., 200Hz = 200kmh, or 500Hz = 200kmh...
-          DEBUG_PRINTF("     DutyPostProc1Hall: %d", dutyCycle);
-
-          if (rawCount < averageFilter) {
-            samples.add(dutyCycleIncoming);
-            rawCount++;
-          }
-
-          if (rawCount >= averageFilter) {
-            dutyCycle = samples.getMedian();
-            //dutyCycle = samples.getAverage();
-            DEBUG_PRINTF("     getAverageHall: %d", dutyCycle);
-            char buf[32];
-            sprintf(buf, "Speed: %d", dutyCycle);
-            ESPUI.updateLabel(label_speed, String(buf));
-
-            if (speedOffsetPositive) {
-              dutyCycle = dutyCycle + speedOffset;
-              dutyCycle = dutyCycle * speedMultiplier;
-              if (convertToMPH) {
-                dutyCycle = dutyCycle * mphFactor;
-              }
-              dutyCycle = findClosestMatch(dutyCycle);
-              motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
-            } else {
-              if (dutyCycle - speedOffset > 0) {
-                dutyCycle = dutyCycle - speedOffset;
-                dutyCycle = dutyCycle * speedMultiplier;
-                if (convertToMPH) {
-                  dutyCycle = dutyCycle * mphFactor;
-                }
-                dutyCycle = findClosestMatch(dutyCycle);
-                motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
-              } else {
-                motorPWM->setPWM_manual(pinMotorOutput, 0);
-              }
-            }
-
-            DEBUG_PRINTF("     FindClosetMatchHall: %d", dutyCycle);
-            rawCount = 0;
-            samples.clear();
-          }
-          break;
+      if (rawCount < averageFilter) {
+        samples.add(dutyCycleIncoming);
+        rawCount++;
       }
 
-      dutyCycle = dutyCycleIncoming;  // re-introduce?  Could do some filter on big changes?  May skip over genuine changes though?
+      if (rawCount >= averageFilter) {
+        dutyCycle = samples.getMedian();
+        //dutyCycle = samples.getAverage();
+        DEBUG_PRINTF("     getAverageHall: %d", dutyCycle);
+        char buf[32];
+        sprintf(buf, "Speed: %d", dutyCycle);
+        ESPUI.updateLabel(label_speed, String(buf));
 
-      DEBUG_PRINTLN("");
+        if (speedOffsetPositive) {
+          dutyCycle = dutyCycle + speedOffset;
+          dutyCycle = dutyCycle * speedMultiplier;
+          if (convertToMPH) {
+            dutyCycle = dutyCycle * mphFactor;
+          }
+          dutyCycle = findClosestMatch(dutyCycle);
+          motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+        } else {
+          if (dutyCycle - speedOffset > 0) {
+            dutyCycle = dutyCycle - speedOffset;
+            dutyCycle = dutyCycle * speedMultiplier;
+            if (convertToMPH) {
+              dutyCycle = dutyCycle * mphFactor;
+            }
+            dutyCycle = findClosestMatch(dutyCycle);
+            motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
+          } else {
+            motorPWM->setPWM_manual(pinMotorOutput, 0);
+          }
+        }
+
+        DEBUG_PRINTF("     FindClosetMatchHall: %d", dutyCycle);
+        rawCount = 0;
+        samples.clear();
+      }
     }
+    dutyCycle = dutyCycleIncoming;  // re-introduce?  Could do some filter on big changes?  May skip over genuine changes though?
   }
 }
 
@@ -204,13 +160,24 @@ uint16_t findClosestMatch(uint16_t val) {
   // has to be 16_t due to 10 bit resolution
   // the 'find'/function returns array position, which is equal to the duty cycle
   uint16_t closest = 0;
-  for (uint16_t i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
-    if (abs(val - closest) >= abs(val - motorPerformance[i]))
+  uint16_t closest2 = 0;
+  uint16_t i = 0;
+
+  for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
+    if (abs(val - closest) >= abs(val - motorPerformance[i])) {
       closest = motorPerformance[i];
-  }
-  for (uint16_t i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
-    if (motorPerformance[i] == closest) {
-      return i;
     }
+  }
+
+  for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
+    if (motorPerformance[i] == closest) {
+      closest2 = i;
+    }
+  }
+
+  if (closest2 >= 385) {  // will run into the end of the array IF it's not found a speed, so return 0!
+    return 0;
+  } else {
+    return closest2;  // else return the correct duty cycle from the found speed
   }
 }

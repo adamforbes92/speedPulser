@@ -18,4 +18,5 @@ V1.09 - added Martin Springell's MK1 Golf Calibration
 V1.10 - added speed multiplier
 V1.11 - added WiFi settings page - saves remote coding
 V1.12 - added Merc W123 calibration and threaded model to suit
+V1.13 - added calibration selection in WiFi.  Removed Minimum Speed & Minimum Hall - assumed zero
 */

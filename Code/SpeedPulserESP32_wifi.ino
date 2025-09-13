@@ -14,11 +14,23 @@ void setupUI() {
 
   // create advanced tab
   auto tabAdvanced = ESPUI.addControl(Tab, "", "Advanced Controls");
+  ESPUI.addControl(Separator, "Calibration:", "", Dark, tabAdvanced);
+  int16_calNumber = ESPUI.addControl(Select, "Calibration", "", Dark, tabAdvanced, generalCallback);
+  ESPUI.addControl(Option, "VW - 120mph; Martin Springell", "VW120Martin", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "VW - 120mph; Forbes-Automotive", "VW120Forbes", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "VW - 140mph; Forbes-Automotive", "VW140Forbes", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "VW - 160mph; Forbes-Automotive", "VW160Forbes", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "Ford - 120mph_1; Forbes-Automotive", "Ford120Forbes1", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "Ford - 120mph_2; Forbes-Automotive", "Ford120Forbes2", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "FIAT - 40-160mph; Forbes-Automotive", "FIAT160Forbes1", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "FIAT - 20-110mph; Forbes-Automotive", "FIAT160Forbes2", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "Merc - 120mph; Forbes-Automotive", "Merc120Forbes", Dark, int16_calNumber);
+
   ESPUI.addControl(Separator, "Testing", "", Dark, tabAdvanced);
   bool_testSpeedo = ESPUI.addControl(Switcher, "Test Speedo", "", Dark, tabAdvanced, generalCallback);
   int16_tempSpeed = ESPUI.addControl(Slider, "Go to Speed", String(tempSpeed), Dark, tabAdvanced, generalCallback);
   ESPUI.addControl(Min, "", "0", Dark, int16_tempSpeed);
-  ESPUI.addControl(Max, "", "200", Dark, int16_tempSpeed);
+  ESPUI.addControl(Max, "", "400", Dark, int16_tempSpeed);
 
   ESPUI.addControl(Separator, "Speed Offsets", "", Dark, tabAdvanced);
   bool_positiveOffset = ESPUI.addControl(Switcher, "Positive Offset", String(speedOffsetPositive), Dark, tabAdvanced, generalCallback);
@@ -27,25 +39,14 @@ void setupUI() {
   ESPUI.addControl(Max, "", "50", Dark, int16_speedOffset);
 
   ESPUI.addControl(Separator, "Speed Limits:", "", Dark, tabAdvanced);
-  int16_minSpeed = ESPUI.addControl(Slider, "Minimum Speed", String(minSpeed), Dark, tabAdvanced, generalCallback);
   int16_maxSpeed = ESPUI.addControl(Slider, "Maximum Speed", String(maxSpeed), Dark, tabAdvanced, generalCallback);
-  ESPUI.addControl(Min, "", "0", Dark, int16_minSpeed);
   ESPUI.addControl(Max, "", "400", Dark, int16_maxSpeed);
   ESPUI.addControl(Button, "Reset", "Reset", Dark, tabAdvanced, extendedCallback, (void *)12);
 
   ESPUI.addControl(Separator, "Hall Incoming Freq:", "", Dark, tabAdvanced);
-  int16_minHall = ESPUI.addControl(Slider, "Minimum Hall", String(minFreqHall), Dark, tabAdvanced, generalCallback);
   int16_maxHall = ESPUI.addControl(Slider, "Maximum Hall", String(maxFreqHall), Dark, tabAdvanced, generalCallback);
-  ESPUI.addControl(Min, "", "0", Dark, int16_minHall);
   ESPUI.addControl(Max, "", "400", Dark, int16_maxHall);
   ESPUI.addControl(Button, "Reset", "Reset", Dark, tabAdvanced, extendedCallback, (void *)13);
-
-  ESPUI.addControl(Separator, "CAN Incoming Freq:", "", Dark, tabAdvanced);
-  int16_minCAN = ESPUI.addControl(Slider, "Minimum CAN", String(minFreqCAN), Dark, tabAdvanced, generalCallback);
-  int16_maxCAN = ESPUI.addControl(Slider, "Maximum CAN", String(maxFreqCAN), Dark, tabAdvanced, generalCallback);
-  ESPUI.addControl(Min, "", "0", Dark, int16_minCAN);
-  ESPUI.addControl(Max, "", "400", Dark, int16_maxCAN);
-  ESPUI.addControl(Button, "Reset", "Reset", Dark, tabAdvanced, extendedCallback, (void *)14);
 
   ESPUI.addControl(Separator, "Incoming Speed:", "", Dark, tabAdvanced);
   label_speed = ESPUI.addControl(Label, "", "0", Dark, tabAdvanced, generalCallback);
@@ -91,42 +92,26 @@ void generalCallback(Control *sender, int type) {
 
   uint8_t tempID = int(sender->id);
   switch (tempID) {
-    case 3:
-      hasNeedleSweep = sender->value.toInt();
-      break;
-    case 4:
-      sweepSpeed = sender->value.toInt();
-      break;
+    case 3: hasNeedleSweep = sender->value.toInt(); break;
+    case 4: sweepSpeed = sender->value.toInt(); break;
     case 10:
-      testSpeedo = sender->value.toInt();
+      if (sender->value == "VW120Martin") motorPerformanceVal = 1;
+      if (sender->value == "VW120Forbes") motorPerformanceVal = 2;
+      if (sender->value == "VW140Forbes") motorPerformanceVal = 3;
+      if (sender->value == "VW160Forbes") motorPerformanceVal = 4;
+      if (sender->value == "Ford120Forbes1") motorPerformanceVal = 5;
+      if (sender->value == "Ford120Forbes2") motorPerformanceVal = 6;
+      if (sender->value == "FIAT160Forbes1") motorPerformanceVal = 7;
+      if (sender->value == "FIAT160Forbes2") motorPerformanceVal = 8;
+      if (sender->value == "Merc120Forbes") motorPerformanceVal = 9;
+      updateMotorPerformance = true;
       break;
-    case 11:
-      tempSpeed = sender->value.toInt();
-      break;
-    case 15:
-      speedOffsetPositive = sender->value.toInt();
-      break;
-    case 16:
-      speedOffset = sender->value.toInt();
-      break;
-    case 20:
-      minSpeed = sender->value.toInt();
-      break;
-    case 21:
-      maxSpeed = sender->value.toInt();
-      break;
-    case 26:
-      minFreqHall = sender->value.toInt();
-      break;
-    case 27:
-      maxFreqHall = sender->value.toInt();
-      break;
-    case 32:
-      minFreqCAN = sender->value.toInt();
-      break;
-    case 33:
-      maxFreqCAN = sender->value.toInt();
-      break;
+    case 21: testSpeedo = sender->value.toInt(); break;
+    case 22: tempSpeed = sender->value.toInt(); break;
+    case 26: speedOffsetPositive = sender->value.toInt(); break;
+    case 27: speedOffset = sender->value.toInt(); break;
+    case 31: maxSpeed = sender->value.toInt(); break;
+    case 35: maxFreqHall = sender->value.toInt(); break;
   }
 }
 
@@ -151,28 +136,16 @@ void extendedCallback(Control *sender, int type, void *param) {
         tempNeedleSweep = true;
       }
       break;
-    case 24:
+    case 33:
       if (type == B_UP) {
-        minSpeed = 0;
         maxSpeed = 200;
-        ESPUI.updateSlider(int16_minSpeed, minSpeed);
         ESPUI.updateSlider(int16_maxSpeed, maxSpeed);
       }
       break;
-    case 30:
+    case 37:
       if (type == B_UP) {
-        minFreqHall = 0;
         maxFreqHall = 200;
-        ESPUI.updateSlider(int16_minHall, minFreqHall);
         ESPUI.updateSlider(int16_maxHall, maxFreqHall);
-      }
-      break;
-    case 36:
-      if (type == B_UP) {
-        minFreqCAN = 0;
-        maxFreqCAN = 200;
-        ESPUI.updateSlider(int16_minCAN, minFreqCAN);
-        ESPUI.updateSlider(int16_maxCAN, maxFreqCAN);
       }
       break;
   }
@@ -216,5 +189,37 @@ void disconnectWifi() {
     DEBUG_PRINTLN("No connections, turning off");
     WiFi.disconnect(true, false);
     WiFi.mode(WIFI_OFF);
+  }
+}
+
+void updateLabels() {
+  switch (motorPerformanceVal) {
+    case 1:
+      ESPUI.updateSelect(int16_calNumber, "VW120Martin");
+      break;
+    case 2:
+      ESPUI.updateSelect(int16_calNumber, "VW120Forbes");
+      break;
+    case 3:
+      ESPUI.updateSelect(int16_calNumber, "VW140Forbes");
+      break;
+    case 4:
+      ESPUI.updateSelect(int16_calNumber, "VW160Forbes");
+      break;
+    case 5:
+      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes1");
+      break;
+    case 6:
+      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes2");
+      break;
+    case 7:
+      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes1");
+      break;
+    case 8:
+      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes2");
+      break;
+    case 9:
+      ESPUI.updateSelect(int16_calNumber, "Merc120Forbes");
+      break;
   }
 }
