@@ -20,7 +20,7 @@ void basicInit() {
 void testSpeed() {
   // check to see if tempSpeed has a value.  IF it does (>0), set the speed using the 'find closest match' as a duty cycle
   if (tempSpeed > 0) {
-    DEBUG_PRINTF("Speed: %d", tempSpeed);
+    DEBUG_PRINTF("Chosen Speed: %d", tempSpeed);
     if (speedOffsetPositive) {
       dutyCycle = tempSpeed + speedOffset;
       dutyCycle = dutyCycle * speedMultiplier;
@@ -42,7 +42,7 @@ void testSpeed() {
         motorPWM->setPWM_manual(pinMotorOutput, 0);
       }
     }
-    DEBUG_PRINTF(".  Adjusted Speed: %d", dutyCycle);
+    DEBUG_PRINTF("  Final Duty: %d", dutyCycle);
     DEBUG_PRINTLN("");
   } else {
     // tempSpeed == 0, therefore run through every single duty with a long delay to give you time to go between IDE & cluster and write down...

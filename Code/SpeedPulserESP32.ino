@@ -48,7 +48,6 @@ void incomingHz() {                                               // Interrupt 0
 
 void setup() {
 #ifdef serialDebug
-  delay(2000);
   Serial.begin(baudSerial);
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
@@ -56,6 +55,7 @@ void setup() {
   readEEP();         // read the EEPROM for previous saved states
   tickEEP.start();   // begin ticker for the EEPROM
   tickWiFi.start();  // begin ticker for the WiFi (to turn off after 60s)
+  updateMotorArray();
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
@@ -70,7 +70,6 @@ void setup() {
   WiFi.setTxPower(WIFI_POWER_8_5dBm);  // some C3 boards require a lower Tx power otherwise it won't appear
 
   updateLabels();
-  updateMotorArray();
 }
 
 void loop() {
@@ -162,22 +161,37 @@ uint16_t findClosestMatch(uint16_t val) {
   uint16_t closest = 0;
   uint16_t closest2 = 0;
   uint16_t i = 0;
+  bool speedTest = false;
 
   for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
-    if (abs(val - closest) >= abs(val - motorPerformance[i])) {
-      closest = motorPerformance[i];
+    if (motorPerformance[i] > 0) {
+      if (abs(val) > motorPerformance[i]) {
+        speedTest = true;
+        i = (sizeof motorPerformance / sizeof motorPerformance[0]);
+      }
     }
   }
 
-  for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
-    if (motorPerformance[i] == closest) {
-      closest2 = i;
+  if (speedTest) {
+    for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
+      if (abs(val - closest) >= abs(val - motorPerformance[i])) {
+        closest = motorPerformance[i];
+      }
     }
-  }
 
-  if (closest2 >= 385) {  // will run into the end of the array IF it's not found a speed, so return 0!
-    return 0;
+    for (i = 0; i < sizeof motorPerformance / sizeof motorPerformance[0]; i++) {
+      if (motorPerformance[i] == closest) {
+        closest2 = i;
+        i = (sizeof motorPerformance / sizeof motorPerformance[0]);
+      }
+    }
+
+    if (closest2 >= 385) {  // will run into the end of the array IF it's not found a speed, so return 0!
+      return 0;
+    } else {
+      return closest2;  // else return the correct duty cycle from the found speed
+    }
   } else {
-    return closest2;  // else return the correct duty cycle from the found speed
+    return 0;
   }
 }
