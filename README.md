@@ -1,9 +1,9 @@
 # SpeedPulser
-Designed to take digital pulses from a speed sensor within the gearbox and translate this into a PWM signal which drives an OEM speedometer.  It’s perfect for situations where a physical speedometer cable cannot be installed or those wishing for a clearer installation.  It is budget-friendly and therefore requires some final user setup and calibration.
+Designed to take digital pulses from a speed sensor within the gearbox and translate this into a PWM signal which drives an OEM speedometer.  It’s perfect for situations where a physical speedometer cable cannot be installed or those wishing for a cleaner installation.  It is budget-friendly and therefore requires some final user setup and calibration.
 
 The SpeedPulser also accepts speed signals from Can2Cluster – which can get speed from the ECU, DSG or GPS inputs.
 
-The device takes the signals and converts them into signals to suit analog clusters – like the MK1 & MK2.  It is fully opensource and the source code can be downloaded and adjusted to suit other brands if required.  Please get in touch if you need help!
+The device takes the signals and converts them into signals to suit analog clusters – like the MK1 & MK2 Golf.  It is fully opensource and the source code can be downloaded and adjusted to suit other brands if required.  Please get in touch if you need help!
 
 ### More Detailed Instructions
 The last file on GitHub is the 'Installation Guide' and provides more detail.
@@ -25,13 +25,13 @@ Software Benefits:
 > WiFi Enabled
 
 ## WiFi Support
-WiFi now enabled for easier on-the-fly setup.  Needle sweep & calibration can be done without needing to mess with complicated firmware.
+WiFi is now enabled for easier on-the-fly setup.  Needle sweep & calibration can be done without needing to mess with complicated firmware.
 Connect to 'SpeedPulser' on WiFi and use IP Address 192.168.1.1 in your browser to adjust settings!
 
 ## Coupler Installation
 As the couplers are 3D printed, each coupler, motor housing and speedometer and the alignment of the sun and moon will all be unique and therefore final torque applied to the cluster will be different.  There is a potential for slight variances in final achieved speed.  Therefore, it is the end users requirement to install the coupler and ensure appropriate alignment.  Once installed, the 'highest' speed should be achieved and the potentiometer adjusted to calibrate.  
 
-Press the small button on the right-hand side (closest to the edge of the PCB) to drive the motor at full speed and calibrate to the maximum speed on the speedometer to suit.  This may need a few iterations are parts wear into each other.  
+The easiest way of calibration is to use WiFi to set the motor to run at the maximum speedometer speed and adjust the blue potentiometer on the board to suit.  
 
 The coupler will be a tight fit on the motor as will the brass driving shaft.  A few light taps will encourge them on.  Remember that this is budget friendly and while a metal alternative would be neat, it's not within budget.
 
