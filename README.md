@@ -8,6 +8,9 @@ The device takes the signals and converts them into signals to suit analog clust
 ### More Detailed Instructions
 The last file on GitHub is the 'Installation Guide' and provides more detail.
 
+### Purchase
+If you want to purchase an assembled SpeedPulser, you can do so here: [SpeedPulser - Forbes Automotive](https://forbes-automotive.com/products/speedpulser)
+
 ## Basic Wiring
 Only three wires are required to operate the SpeedPulser:
 
