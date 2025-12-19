@@ -10,12 +10,13 @@
 
 // if you turn off power, unplug usb, replug usb then power it'll restart
 #define baudSerial 115200  // baud rate for serial feedback
-#define serialDebug 0      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
+#define serialDebug 1      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
 #define serialDebugWifi 0  // for wifi feedback
 #define eepRefresh 2000    // EEPROM Refresh in ms
 #define wifiDisable 60000  // turn off WiFi in ms
 
 extern bool testSpeedo = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
+extern bool testCal = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
 extern bool hasNeedleSweep = false;  // for needle sweep ** CAN CHANGE THIS **
 extern uint8_t sweepSpeed = 18;      // for needle sweep rate of change (in ms) ** CAN CHANGE THIS **
 
@@ -55,6 +56,7 @@ extern bool speedOffsetPositive = true;  // set to 1 for the above value to be A
 
 extern unsigned long dutyCycleIncoming = 0;  // Duty Cycle % coming in from Can2Cluster or Hall
 extern long tempSpeed = 0;                   // for testing only, set fixed speed in kmh.  Can set to 0 to speed up / slow down on repeat with testSpeed enabled
+extern long tempDutyCycle = 0;
 extern bool tempNeedleSweep = false;         // set in WiFi, if testing needle sweep, this will be set
 extern long pwmFrequency = 10000;            // PWM Hz (motor supplied is 10kHz)
 extern long dutyCycle = 0;                   // starting / default Hz: 0% is motor 'off'
@@ -90,11 +92,11 @@ extern void updateMotorArray();
 
 // UI handles - for WiFi
 uint16_t bool_NeedleSweep, int16_sweepSpeed;
-uint16_t bool_testSpeedo, int16_tempSpeed;
+uint16_t bool_testSpeedo, int16_tempSpeed, bool_testCal;
 
 uint16_t bool_positiveOffset, int16_speedOffset;
 uint16_t int16_minSpeed, int16_maxSpeed, int16_minHall, int16_maxHall, int16_minCAN, int16_maxCAN, int16_calNumber;
-int label_speed;
+int label_speed, label_currentPWM;
 
 uint16_t graph;
 uint16_t mainTime;

@@ -84,7 +84,7 @@ void loop() {
 
   // reset speed to zero if >durationReset
   if (((millis() + 10) - lastPulse) > durationReset) {
-    if (!testSpeedo) {
+    if (!testSpeedo && !testCal) {
       motorPWM->setPWM_manual(pinMotorOutput, 0);
       ESPUI.updateLabel(label_speed, "Speed: 0");
     }
@@ -100,11 +100,11 @@ void loop() {
   }
 
   // check to see if in 'test mode' (testSpeedo = 1)
-  if (testSpeedo) {
+  if (testSpeedo || testCal) {
     testSpeed();  // if tempSpeed > 0, set to fixed duty, else, run through available duties
   }
 
-  if (!testSpeedo) {
+  if (!testSpeedo && !testCal) {
     if (dutyCycle != dutyCycleIncoming) {  // only update PWM IF speed has changed (can cause flicker otherwise)
       DEBUG_PRINTF("     DutyIncomingHall: %d", dutyCycleIncoming);
       dutyCycleIncoming = map(dutyCycleIncoming, 0, maxFreqHall, 0, maxSpeed);  // map incoming range to this codes range.  Max Hz should match Max Speed - i.e., 200Hz = 200kmh, or 500Hz = 200kmh...

@@ -20,6 +20,7 @@ void setupUI() {
   ESPUI.addControl(Option, "VW - 120mph; Forbes-Automotive", "VW120Forbes", Dark, int16_calNumber);
   ESPUI.addControl(Option, "VW - 140mph; Forbes-Automotive", "VW140Forbes", Dark, int16_calNumber);
   ESPUI.addControl(Option, "VW - 160mph; Forbes-Automotive", "VW160Forbes", Dark, int16_calNumber);
+  ESPUI.addControl(Option, "VW - 300kph; Forbes-Automotive", "VW300Forbes", Dark, int16_calNumber);
   ESPUI.addControl(Option, "Ford - 120mph_1; Forbes-Automotive", "Ford120Forbes1", Dark, int16_calNumber);
   ESPUI.addControl(Option, "Ford - 120mph_2; Forbes-Automotive", "Ford120Forbes2", Dark, int16_calNumber);
   ESPUI.addControl(Option, "FIAT - 40-160mph; Forbes-Automotive", "FIAT160Forbes1", Dark, int16_calNumber);
@@ -51,6 +52,14 @@ void setupUI() {
   ESPUI.addControl(Separator, "Incoming Speed:", "", Dark, tabAdvanced);
   label_speed = ESPUI.addControl(Label, "", "0", Dark, tabAdvanced, generalCallback);
 
+  // create calibration tab:
+  auto tabCal = ESPUI.addControl(Tab, "", "Calibration");
+  ESPUI.addControl(Separator, "Calibration:", "", Dark, tabCal);
+  bool_testCal = ESPUI.addControl(Switcher, "Enable Calibration", "", Dark, tabCal, generalCallback);
+  ESPUI.addControl(Button, "Up/Down", "Previous", Dark, tabCal, extendedCallback, (void *)14);
+  ESPUI.addControl(Button, "Up/Down", "Next", Dark, tabCal, extendedCallback, (void *)15);
+  label_currentPWM = ESPUI.addControl(Label, "", "0", Dark, tabCal, generalCallback);
+
   //Finally, start up the UI.
   //This should only be called once we are connected to WiFi.
   ESPUI.begin(wifiHostName);
@@ -79,7 +88,7 @@ void graphClearCallback(Control *sender, int type) {
 }
 
 void generalCallback(Control *sender, int type) {
-#ifdef serialDebugWifi
+#if serialDebugWifi
   Serial.print("CB: id(");
   Serial.print(sender->id);
   Serial.print(") Type(");
@@ -99,24 +108,27 @@ void generalCallback(Control *sender, int type) {
       if (sender->value == "VW120Forbes") motorPerformanceVal = 2;
       if (sender->value == "VW140Forbes") motorPerformanceVal = 3;
       if (sender->value == "VW160Forbes") motorPerformanceVal = 4;
-      if (sender->value == "Ford120Forbes1") motorPerformanceVal = 5;
-      if (sender->value == "Ford120Forbes2") motorPerformanceVal = 6;
-      if (sender->value == "FIAT160Forbes1") motorPerformanceVal = 7;
-      if (sender->value == "FIAT160Forbes2") motorPerformanceVal = 8;
-      if (sender->value == "Merc120Forbes") motorPerformanceVal = 9;
+      if (sender->value == "VW300Forbes") motorPerformanceVal = 5;
+      if (sender->value == "Ford120Forbes1") motorPerformanceVal = 6;
+      if (sender->value == "Ford120Forbes2") motorPerformanceVal = 7;
+      if (sender->value == "FIAT160Forbes1") motorPerformanceVal = 8;
+      if (sender->value == "FIAT160Forbes2") motorPerformanceVal = 9;
+      if (sender->value == "Merc120Forbes") motorPerformanceVal = 10;
+
       updateMotorPerformance = true;
       break;
-    case 21: testSpeedo = sender->value.toInt(); break;
-    case 22: tempSpeed = sender->value.toInt(); break;
-    case 26: speedOffsetPositive = sender->value.toInt(); break;
-    case 27: speedOffset = sender->value.toInt(); break;
-    case 31: maxSpeed = sender->value.toInt(); break;
-    case 35: maxFreqHall = sender->value.toInt(); break;
+    case 22: testSpeedo = sender->value.toInt(); break;
+    case 23: tempSpeed = sender->value.toInt(); break;
+    case 27: speedOffsetPositive = sender->value.toInt(); break;
+    case 28: speedOffset = sender->value.toInt(); break;
+    case 32: maxSpeed = sender->value.toInt(); break;
+    case 36: maxFreqHall = sender->value.toInt(); break;
+    case 43: testCal = sender->value.toInt(); break;
   }
 }
 
 void extendedCallback(Control *sender, int type, void *param) {
-#ifdef serialDebugWifi
+#if serialDebugWifi
   Serial.print("CB: id(");
   Serial.print(sender->id);
   Serial.print(") Type(");
@@ -136,16 +148,32 @@ void extendedCallback(Control *sender, int type, void *param) {
         tempNeedleSweep = true;
       }
       break;
-    case 33:
+    case 34:
       if (type == B_UP) {
         maxSpeed = 200;
         ESPUI.updateSlider(int16_maxSpeed, maxSpeed);
       }
       break;
-    case 37:
+    case 38:
       if (type == B_UP) {
         maxFreqHall = 200;
         ESPUI.updateSlider(int16_maxHall, maxFreqHall);
+      }
+      break;
+    case 44:
+      if (type == B_UP) {
+        tempDutyCycle = tempDutyCycle - 1;
+        if (tempDutyCycle < 0) {
+          tempDutyCycle = 385;
+        }
+      }
+      break;
+    case 45:
+      if (type == B_UP) {
+        tempDutyCycle = tempDutyCycle + 1;
+        if (tempDutyCycle > 385) {
+          tempDutyCycle = 0;
+        }
       }
       break;
   }
@@ -207,18 +235,21 @@ void updateLabels() {
       ESPUI.updateSelect(int16_calNumber, "VW160Forbes");
       break;
     case 5:
-      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes1");
+      ESPUI.updateSelect(int16_calNumber, "VW300Forbes");
       break;
     case 6:
-      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes2");
+      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes1");
       break;
     case 7:
-      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes1");
+      ESPUI.updateSelect(int16_calNumber, "Ford120Forbes2");
       break;
     case 8:
-      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes2");
+      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes1");
       break;
     case 9:
+      ESPUI.updateSelect(int16_calNumber, "FIAT160Forbes2");
+      break;
+    case 10:
       ESPUI.updateSelect(int16_calNumber, "Merc120Forbes");
       break;
   }

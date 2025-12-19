@@ -19,8 +19,20 @@ void basicInit() {
 
 void testSpeed() {
   // check to see if tempSpeed has a value.  IF it does (>0), set the speed using the 'find closest match' as a duty cycle
-  if (tempSpeed > 0) {
+  if (testCal) {
+    motorPWM->setPWM_manual(pinMotorOutput, tempDutyCycle);
+    char buf[32];
+    sprintf(buf, "Duty: %d", tempDutyCycle);
+    ESPUI.updateLabel(label_currentPWM, String(buf));
+#if serialDebug
+    DEBUG_PRINTF("     Duty: %d", tempDutyCycle);
+#endif
+  }
+
+  if (!testCal && tempSpeed > 0) {
+#if serialDebug
     DEBUG_PRINTF("Chosen Speed: %d", tempSpeed);
+#endif
     if (speedOffsetPositive) {
       dutyCycle = tempSpeed + speedOffset;
       dutyCycle = dutyCycle * speedMultiplier;
@@ -42,13 +54,19 @@ void testSpeed() {
         motorPWM->setPWM_manual(pinMotorOutput, 0);
       }
     }
+#if serialDebug
     DEBUG_PRINTF("  Final Duty: %d", dutyCycle);
     DEBUG_PRINTLN("");
-  } else {
+#endif
+}
+
+  if (testSpeedo && tempSpeed == 0) {
     // tempSpeed == 0, therefore run through every single duty with a long delay to give you time to go between IDE & cluster and write down...
     for (uint16_t i = 14; i < 385; i++) {  // run through all available speeds and drive the motor
+#if serialDebug
       DEBUG_PRINTF("Duty: %d", i);
       DEBUG_PRINTLN("");
+#endif
 
       if (tempSpeed > 0) {
         i = 385;
@@ -63,8 +81,10 @@ void testSpeed() {
 void needleSweep() {
   // ramp up
   for (int i = 0; i < maxSpeed; i++) {
+#if serialDebug
     DEBUG_PRINTF("Speed: %d", i);
     DEBUG_PRINTLN("");
+#endif
 
     dutyCycle = findClosestMatch(i);
     motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);
@@ -76,8 +96,10 @@ void needleSweep() {
 
   // ramp down
   for (int i = maxSpeed; i > 0; i--) {  // set at >0 to stop the needle 'bouncing' when it returns to zero
+#if serialDebug
     DEBUG_PRINTF("Speed: %d", i);
     DEBUG_PRINTLN("");
+#endif
 
     dutyCycle = findClosestMatch(i);
     motorPWM->setPWM_manual(pinMotorOutput, dutyCycle);

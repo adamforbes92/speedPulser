@@ -20,4 +20,6 @@ V1.11 - added WiFi settings page - saves remote coding
 V1.12 - added Merc W123 calibration and threaded model to suit
 V1.13 - added calibration selection in WiFi.  Removed Minimum Speed & Minimum Hall - assumed zero
 V1.14 - added 'cannot find' speed to set to zero and low speed issues
+V1.15 - added 'calibration mode' - to be able to go through with buttons on WiFi to make cal easier.
+V1.16 - Sam Wade provided a 160mph cluster - speed corrected to suit.  New array(!).  Calibration selection incorrect and shifted '1' down!
 */
