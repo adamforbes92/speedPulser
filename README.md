@@ -40,8 +40,28 @@ Drive shafts are supplied in excess of required length and should be trimmed to 
 
 ## Calibration
 If final speedometer reading is incorrect across the range due to tyre size or gearbox variations, the source code can be editted to suit new readings.
-The main array for 'Speed' vs. 'PWM' is within '_defs.h' under 'motorPerformance'.  8-bit resolution is duty between 0-100%, but for some fine granularity, 10 bit resolution is the default 'shipped' with.  Therefore there are ~400 entries of PWM, with each having it's own speed.
-> uint8_t motorPerformance[] = {0, 0, 0, 0...};
+The main array for 'Speed' vs. 'PWM' is within '_motorCal.ino'.  8-bit resolution is duty between 0-100%, but for some fine granularity, 10 bit resolution is the default 'shipped' with.  Therefore there are 385 entries of PWM, with each having it's own speed.
+> uint16_t motorPerformance[] = {0, 0, 0, 0...};
+
+To edit a calibration; use the 'Calibration' tab in WiFi and enable calibration.  
+
+Step 1:
+Open the 'Motor Performance' Excel file and use the 'Example' tab to fill in.
+
+Step 2:
+In in the calibration tab, press 'Previous' - this will rollback the Duty Cycle to 385 - this is the maximum.  Adjust the blue potentiometer to suit the maximum speed on the cluster.
+
+Step 3:
+In in the calibration tab, press 'Next' until the duty cycle makes the cluster spin - this is the lowest speed available.  Note the speed achieved in km/h at this duty cycle.
+
+Step 4:
+Press 'Next' again and note the speed achieved.  Carry on this throughout the entire range of the duty cycles available.  
+
+Step 5:
+Copy these values into a Word document and carry out a 'Find/Replace'.  Find "^p" and replace with ",".  This is a quick way to change all the new lines with commas.  
+
+Step 6:
+Copy the array from Word into the suitable '_motorCal' array and upload the code.  Submit the code to GitHub for others!
 
 ## Understanding the Excel
 There is a plot of motor speed vs. PWM in an Excel.  Should it be required, the module can be put into 'testing mode' and each PWM variance worked through in 5 second intervals.  It takes around 10 minutes to carry out a full sweep of the available speeds, but will give good accuracy.  
