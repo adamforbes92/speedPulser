@@ -22,4 +22,5 @@ V1.13 - added calibration selection in WiFi.  Removed Minimum Speed & Minimum Ha
 V1.14 - added 'cannot find' speed to set to zero and low speed issues
 V1.15 - added 'calibration mode' - to be able to go through with buttons on WiFi to make cal easier.
 V1.16 - Sam Wade provided a 160mph cluster - speed corrected to suit.  New array(!).  Calibration selection incorrect and shifted '1' down!
+V1.17 - added 70mph Smiths cluster - uses a 5/8 18tpi housing
 */

@@ -11,7 +11,7 @@
 // if you turn off power, unplug usb, replug usb then power it'll restart
 #define baudSerial 115200  // baud rate for serial feedback
 #define serialDebug 1      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
-#define serialDebugWifi 0  // for wifi feedback
+#define serialDebugWifi 1  // for wifi feedback
 #define eepRefresh 2000    // EEPROM Refresh in ms
 #define wifiDisable 60000  // turn off WiFi in ms
 
