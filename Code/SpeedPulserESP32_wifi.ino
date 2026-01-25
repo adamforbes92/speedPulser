@@ -27,7 +27,10 @@ void setupUI() {
   ESPUI.addControl(Option, "FIAT - 20-110mph; Forbes-Automotive", "FIAT160Forbes2", Dark, int16_calNumber);
   ESPUI.addControl(Option, "Merc - 120mph; Forbes-Automotive", "Merc120Forbes", Dark, int16_calNumber);
   ESPUI.addControl(Option, "Smiths - 70mph; Forbes-Automotive", "Smiths70Forbes", Dark, int16_calNumber);
-
+  ESPUI.addControl(Option, "FutureCal1; Forbes-Automotive", "FutureCal1", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
+  ESPUI.addControl(Option, "FutureCal2; Forbes-Automotive", "FutureCal2", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
+  ESPUI.addControl(Option, "FutureCal3; Forbes-Automotive", "FutureCal3", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
+  
   ESPUI.addControl(Separator, "Testing", "", Dark, tabAdvanced);
   bool_testSpeedo = ESPUI.addControl(Switcher, "Test Speedo", "", Dark, tabAdvanced, generalCallback);
   int16_tempSpeed = ESPUI.addControl(Slider, "Go to Speed", String(tempSpeed), Dark, tabAdvanced, generalCallback);
@@ -116,16 +119,19 @@ void generalCallback(Control *sender, int type) {
       if (sender->value == "FIAT160Forbes2") motorPerformanceVal = 9;
       if (sender->value == "Merc120Forbes") motorPerformanceVal = 10;
       if (sender->value == "Smiths70Forbes") motorPerformanceVal = 11;
+      if (sender->value == "FutureCal1") motorPerformanceVal = 12;
+      if (sender->value == "FutureCal2") motorPerformanceVal = 13;
+      if (sender->value == "FutureCal3") motorPerformanceVal = 14;
 
       updateMotorPerformance = true;
       break;
-    case 23: testSpeedo = sender->value.toInt(); break;
-    case 24: tempSpeed = sender->value.toInt(); break;
-    case 28: speedOffsetPositive = sender->value.toInt(); break;
-    case 29: speedOffset = sender->value.toInt(); break;
-    case 33: maxSpeed = sender->value.toInt(); break;
-    case 37: maxFreqHall = sender->value.toInt(); break;
-    case 44: testCal = sender->value.toInt(); break;
+    case 26: testSpeedo = sender->value.toInt(); break;
+    case 27: tempSpeed = sender->value.toInt(); break;
+    case 31: speedOffsetPositive = sender->value.toInt(); break;
+    case 32: speedOffset = sender->value.toInt(); break;
+    case 36: maxSpeed = sender->value.toInt(); break;
+    case 40: maxFreqHall = sender->value.toInt(); break;
+    case 47: testCal = sender->value.toInt(); break;
   }
 }
 
@@ -150,19 +156,19 @@ void extendedCallback(Control *sender, int type, void *param) {
         tempNeedleSweep = true;
       }
       break;
-    case 35:
+    case 38:
       if (type == B_UP) {
         maxSpeed = 200;
         ESPUI.updateSlider(int16_maxSpeed, maxSpeed);
       }
       break;
-    case 39:
+    case 42:
       if (type == B_UP) {
         maxFreqHall = 200;
         ESPUI.updateSlider(int16_maxHall, maxFreqHall);
       }
       break;
-    case 45:
+    case 48:
       if (type == B_UP) {
         tempDutyCycle = tempDutyCycle - 1;
         if (tempDutyCycle < 0) {
@@ -170,7 +176,7 @@ void extendedCallback(Control *sender, int type, void *param) {
         }
       }
       break;
-    case 46:
+    case 49:
       if (type == B_UP) {
         tempDutyCycle = tempDutyCycle + 1;
         if (tempDutyCycle > 385) {
@@ -255,6 +261,15 @@ void updateLabels() {
       ESPUI.updateSelect(int16_calNumber, "Merc120Forbes");
       break;
     case 11:
+      ESPUI.updateSelect(int16_calNumber, "Smiths70Forbes");
+      break;
+    case 12:
+      ESPUI.updateSelect(int16_calNumber, "Smiths70Forbes");
+      break;
+    case 13:
+      ESPUI.updateSelect(int16_calNumber, "Smiths70Forbes");
+      break;
+    case 14:
       ESPUI.updateSelect(int16_calNumber, "Smiths70Forbes");
       break;
   }
