@@ -1,9 +1,20 @@
 # SpeedPulser
-Designed to take digital pulses from a speed sensor within the gearbox and translate this into a PWM signal which drives an OEM speedometer.  It’s perfect for situations where a physical speedometer cable cannot be installed or those wishing for a cleaner installation.  It is budget-friendly and therefore requires some final user setup and calibration.
+The SpeedPulser is designed to take digital pulses from a speed sensor within the gearbox and translate this into a PWM signal which drives an OEM speedometer.  It’s perfect for situations where a physical speedometer cable cannot be installed or those wishing for a cleaner installation.  It is budget-friendly and therefore requires some final user setup and calibration.
 
 The SpeedPulser also accepts speed signals from Can2Cluster – which can get speed from the ECU, DSG or GPS inputs.
 
 The device takes the signals and converts them into signals to suit analog clusters – like the MK1 & MK2 Golf.  It is fully opensource and the source code can be downloaded and adjusted to suit other brands if required.  Please get in touch if you need help!
+
+It is based on a Lolin C3 ESP32.
+
+### Supported Models
+
+> MK1/MK2 Golf (120/140/160mph)
+> FIAT (160mph)
+> Mercedes W123/W124
+> Smiths 5/8" 
+
+Users are actively encouraged to submit new models & calibrations.
 
 ### More Detailed Instructions
 The last file on GitHub is the 'Installation Guide' and provides more detail.
@@ -11,60 +22,81 @@ The last file on GitHub is the 'Installation Guide' and provides more detail.
 ### Purchase
 If you want to purchase an assembled SpeedPulser, you can do so here: [SpeedPulser - Forbes Automotive](https://forbes-automotive.com/products/speedpulser)
 
-## Basic Wiring
+#### Installation
 Only three wires are required to operate the SpeedPulser:
 
-Inputs:
-> 12v ignition 
-> Ground
-> 12v square wave pulse from gearbox hall sensor or Can2Cluster
+| Pin/ | Signal | Notes |
+|-----|--------|-------|
+| 1 | Vbatt | 12 V |
+| 2 | Ground/MALT | — |
+| 3 | 12v pulse | Square wave type signal |
 
-Outputs:
-> PWM to drive the motor
+For reference, the motor pinout is:
+| Pin/ | Signal | Notes |
+|-----|--------|-------|
+| 1 | Mpwr | Black - 5-9v adjustable |
+| 2 | N/A | Not used |
+| 3 | Motor Direction | Green - ground to reverse |
+| 4 | Motor Ground | White - motor ground |
+| 5 | Motor PWM | 10kHz signal from ESP32 |
 
-Software Benefits:
+#### Pull-up or Pull-down
+Different hall sensors from different manufacturers may require a pull-up or pull-down resistor.  There is a 2-way header on the board to select this.  If you find the SpeedPulser is not detecting incoming pulses, move this jumper.  Some hall sensors may have their own internal resistor, so the jumper can be removed entirely.
+
+#### Coupler Installation
+The motors will come with the coupler pre-installed and the final drive pin and securing pins separate. The end user should remove the motor and align the drive pin into the coupler and push it home. It will be a  tight fit, but a few light taps will drive it home. A spare coupler is also supplied in the kit. There should be an appreciation that the couplers are 3D printed and therefore may have some alignment variations, this is the chance to lightly heat (~100c max) to encourage/make run true. If the coupling has excessive vibration is may strip out, but a drop of superglue will repair this and run indefinitely. If this is required, ensure that the coupler runs true! Future revisions may look to replace these with a metal alternative, but this would reflect in a higher price. The point of this kit is to remain budget friendly. 
+
+![SpeedPulserCoupler](/Images/speedPulserCoupler.png)
+
+#### Trimming the Drive Shaft
+Drive shafts are supplied in excess of required length and should be trimmed to suit each individual cluster.  Typically this is ~level with the motor housing but confirmation that it is not bottomed out is key!
+
+#### Fine Tuning Coupler
+Once the motor is built up, it can be slid over the OEM cluster. Fitment of the drive pin should be confirmed and that the motor spins freely. Some fine tuning here will keep noise to a minimum and reduce the risk of premature failure of the coupler. The drive-pin length should also be confirmed and ensure that it does engage with the cluster but does not bottom out and stop the housing seating fully. Take your time here!
+
+#### Software Benefits
+The SpeedPulser is now WiFi capable which means that all of the necessary calibration settings are available for changing in WiFi.  It will store these settings in EEPROM.  
 > Fully calibrated motor: Duty Percentage vs. Resulting Speed
 > Needle Sweep available
 > WiFi Enabled
 
-## WiFi Support
+#### WiFi Support
 WiFi is now enabled for easier on-the-fly setup.  Needle sweep & calibration can be done without needing to mess with complicated firmware.
-Connect to 'SpeedPulser' on WiFi and use IP Address 192.168.1.1 in your browser to adjust settings!
+Connect to 'SpeedPulser' on WiFi and use IP Address 192.168.1.1 in your browser to adjust settings!  WiFi is available for the first 30s after powering on the unit and will remain active when there is a connection.  This is to manage the heat generated.  Version 2 PCBs have a larger voltage step-down unit which can manage more heat.
 
-## Coupler Installation
-As the couplers are 3D printed, each coupler, motor housing and speedometer and the alignment of the sun and moon will all be unique and therefore final torque applied to the cluster will be different.  There is a potential for slight variances in final achieved speed.  Therefore, it is the end users requirement to install the coupler and ensure appropriate alignment.  Once installed, the 'highest' speed should be achieved and the potentiometer adjusted to calibrate.  
+### Initial Calibration
+Initial calibration will be carried out using the WiFi feature.
 
-The easiest way of calibration is to use WiFi to set the motor to run at the maximum speedometer speed and adjust the blue potentiometer on the board to suit.  
+> Connect to SpeedPulser on WiFi
+> Go to 192.168.1.1
+> Select 'Advanced Controls'
+> Select the calibration you wish to use
+> Choose 'Test Speed'
+> Select 'Go to Speed' and choose the highest value on your cluster
+> Adjust the blue potentiometer to the maximum valve
+> Use 'Go to Speed' to confirm random speeds and ensure that it matches
 
-The coupler will be a tight fit on the motor as will the brass driving shaft.  A few light taps will encourge them on.  Remember that this is budget friendly and while a metal alternative would be neat, it's not within budget.
+![SpeedPulserCoupler](/Images/WiFiConn3.jpg)
+![SpeedPulserCoupler](/Images/WiFiConn2.jpg)
 
-### Trimming the Drive Shaft
-Drive shafts are supplied in excess of required length and should be trimmed to suit each individual cluster.  Typically this is ~level with the motor housing but confirmation that it is not bottomed out is key!
+### Fine Tuning Calibration
+If the speedometer is consistently out by a factor - the 'Offset' option can be used to adjust the speedometer.  The 'Positive Offset' switch will ADD the chosen offset.  If the switch remains off, it will SUBTRACT the chosen offset.
 
-## Calibration
-If final speedometer reading is incorrect across the range due to tyre size or gearbox variations, the source code can be editted to suit new readings.
-The main array for 'Speed' vs. 'PWM' is within '_motorCal.ino'.  8-bit resolution is duty between 0-100%, but for some fine granularity, 10 bit resolution is the default 'shipped' with.  Therefore there are 385 entries of PWM, with each having it's own speed.
-> uint16_t motorPerformance[] = {0, 0, 0, 0...};
+## Calibration of Other Speedometers
 
-To edit a calibration; use the 'Calibration' tab in WiFi and enable calibration.  
+> Connect to SpeedPulser on WiFi
+> Go to 192.168.1.1
+> Select 'Calibration'
+> Choose 'Previous' - this will roll over the duty cycle to 385 - this is the maximum speed avaiable for your calibration
+> Adjust the blue potentiometer to the maximum speed you wish to calibrate to (likely the top speed of the speedometer)
+> Choose 'Next' - this will reset the duty cycle back to 0 
+> Choose 'Next' until the motor begins to turn.  This is the lowest speed the motor can achieve
+> Begin filling the Excel sheet with each speed at each duty cycle
+> Copy these values into a Word document and carry out a 'Find/Replace'.  Find "^p" and replace with ",".  This is a quick way to change all the new lines with commas
+> Copy the array from Word into the suitable '_motorCal' array and upload the code
+> Submit to GitHub for others to use!
 
-Step 1:
-Open the 'Motor Performance' Excel file and use the 'Example' tab to fill in.
-
-Step 2:
-In in the calibration tab, press 'Previous' - this will rollback the Duty Cycle to 385 - this is the maximum.  Adjust the blue potentiometer to suit the maximum speed on the cluster.
-
-Step 3:
-In in the calibration tab, press 'Next' until the duty cycle makes the cluster spin - this is the lowest speed available.  Note the speed achieved in km/h at this duty cycle.
-
-Step 4:
-Press 'Next' again and note the speed achieved.  Carry on this throughout the entire range of the duty cycles available.  
-
-Step 5:
-Copy these values into a Word document and carry out a 'Find/Replace'.  Find "^p" and replace with ",".  This is a quick way to change all the new lines with commas.  
-
-Step 6:
-Copy the array from Word into the suitable '_motorCal' array and upload the code.  Submit the code to GitHub for others!
+![SpeedPulserCoupler](/Images/WiFiConn4.jpg)
 
 ## Understanding the Excel
 There is a plot of motor speed vs. PWM in an Excel.  Should it be required, the module can be put into 'testing mode' and each PWM variance worked through in 5 second intervals.  It takes around 10 minutes to carry out a full sweep of the available speeds, but will give good accuracy.  
