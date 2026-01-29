@@ -7,6 +7,8 @@ The device takes the signals and converts them into signals to suit analog clust
 
 It is based on a Lolin C3 ESP32.
 
+![SpeedPulserCoupler](/Images/BoardOverview.png)
+
 ### Supported Models
 
 > MK1/MK2 Golf (120/140/160mph)
