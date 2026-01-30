@@ -5,7 +5,7 @@ The SpeedPulser also accepts speed signals from Can2Cluster – which can get sp
 
 The device takes the signals and converts them into signals to suit analog clusters – like the MK1 & MK2 Golf.  It is fully opensource and the source code can be downloaded and adjusted to suit other brands if required.  Please get in touch if you need help!
 
-It is based on a Lolin C3 ESP32.
+It is based on a Lolin C3 ESP32 and the BLDC motor is a TY3816B.
 
 ![SpeedPulserCoupler](/Images/BoardOverview.png)
 
