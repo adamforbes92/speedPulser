@@ -2,8 +2,6 @@
 Version History:
 
 todo:
-> Add OTA updates
-> Add WiFI settings page to adjust 'on the fly'
 
 V1.01 - initial release
 V1.02 - added onboard LED pulse to confirm incoming pulses
@@ -23,4 +21,5 @@ V1.14 - added 'cannot find' speed to set to zero and low speed issues
 V1.15 - added 'calibration mode' - to be able to go through with buttons on WiFi to make cal easier.
 V1.16 - Sam Wade provided a 160mph cluster - speed corrected to suit.  New array(!).  Calibration selection incorrect and shifted '1' down!
 V1.17 - added 70mph Smiths cluster - uses a 5/8 18tpi housing
+V1.18 - added Over-the-Air updates
 */

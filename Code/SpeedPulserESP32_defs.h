@@ -1,33 +1,37 @@
 #define _PWM_LOGLEVEL_ 0
-#include "ESP32_FastPWM.h"
-#include <RunningMedian.h>
 #include <Arduino.h>
-#include "TickTwo.h"      // for repeated tasks
-#include <Preferences.h>  // for eeprom/remember settings
-#include <ESPUI.h>
-#include <WiFi.h>
-#include <ESPmDNS.h>
+#include "ESP32_FastPWM.h"  // for motor control
+#include <RunningMedian.h>  // for calculating median
+#include "TickTwo.h"        // for repeated tasks
+#include <Preferences.h>    // for eeprom/remember settings
+#include <ESPUI.h>          // for WiFi interface
+#include <WiFi.h>           // for WiFi interface
+#include <ESPmDNS.h>        // for WiFi interface
 
-// if you turn off power, unplug usb, replug usb then power it'll restart
+// for OTA
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ESPAsyncHTTPUpdateServer.h>
+
 #define baudSerial 115200  // baud rate for serial feedback
 #define serialDebug 0      // for Serial feedback - disable on release(!) ** CAN CHANGE THIS **
-#define serialDebugWifi 0  // for wifi feedback
+#define serialDebugWifi 0  // for Serial WiFi feedback - disable on release(!) ** CAN CHANGE THIS **
 #define eepRefresh 2000    // EEPROM Refresh in ms
 #define wifiDisable 60000  // turn off WiFi in ms
 
 extern bool testSpeedo = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
-extern bool testCal = false;      // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
+extern bool testCal = false;         // for testing only, vary final pwmFrequency for speed ** CAN CHANGE THIS **
 extern bool hasNeedleSweep = false;  // for needle sweep ** CAN CHANGE THIS **
 extern uint8_t sweepSpeed = 18;      // for needle sweep rate of change (in ms) ** CAN CHANGE THIS **
 
-#define averageFilter 6          // number of samples to take to average/remove erraticness from freq. changes.  Higher number, more samples ** CAN CHANGE THIS **
-#define durationReset 1500       // duration of 'last sample' before reset speed back to zero
-uint16_t motorPerformance[385];  // for copying the motorPerformance data on selection of calibration value
-extern uint8_t motorPerformanceVal = 0;
+#define averageFilter 6                  // number of samples to take to average/remove erraticness from freq. changes.  Higher number, more samples ** CAN CHANGE THIS **
+#define durationReset 1500               // duration of 'last sample' before reset speed back to zero
+uint16_t motorPerformance[385];          // for copying the motorPerformance data on selection of calibration value
+extern uint8_t motorPerformanceVal = 0;  // stored EEP value for calibration
 extern bool updateMotorPerformance = false;
 
-extern uint16_t maxFreqHall = 200;  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS **
-extern uint16_t maxSpeed = 200;     // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS **
+extern uint16_t maxFreqHall = 200;  // max frequency for top speed using the 02J / 02M hall sensor ** CAN CHANGE THIS IN WiFI **
+extern uint16_t maxSpeed = 200;     // minimum cluster speed in kmh on the cluster ** CAN CHANGE THIS IN WiFI **
 
 extern uint8_t speedOffset = 0;  // for adjusting a GLOBAL FIXED speed offset - so the entire range is offset by X value.  Might be easier to use this than the input max freq.
 #define speedMultiplier 1
@@ -57,10 +61,10 @@ extern bool speedOffsetPositive = true;  // set to 1 for the above value to be A
 extern unsigned long dutyCycleIncoming = 0;  // Duty Cycle % coming in from Can2Cluster or Hall
 extern long tempSpeed = 0;                   // for testing only, set fixed speed in kmh.  Can set to 0 to speed up / slow down on repeat with testSpeed enabled
 extern long tempDutyCycle = 0;
-extern bool tempNeedleSweep = false;         // set in WiFi, if testing needle sweep, this will be set
-extern long pwmFrequency = 10000;            // PWM Hz (motor supplied is 10kHz)
-extern long dutyCycle = 0;                   // starting / default Hz: 0% is motor 'off'
-extern int pwmResolution = 10;               // number of bits for motor resolution.  Can use 8 or 10, although 8 makes it a bit 'jumpy'
+extern bool testNeedleSweep = false;  // set in WiFi, if testing needle sweep, this will be set
+extern long pwmFrequency = 10000;     // PWM Hz (motor supplied is 10kHz)
+extern long dutyCycle = 0;            // starting / default Hz: 0% is motor 'off'
+extern int pwmResolution = 10;        // number of bits for motor resolution.  Can use 8 or 10, although 8 makes it a bit 'jumpy'
 
 extern int rawCount = 0;  // counter for pulses incoming
 extern unsigned long lastPulse = 0;
@@ -82,6 +86,7 @@ extern void graphClearCallback(Control *sender, int type);
 extern void randomString(char *buf, int len);
 extern void extendedCallback(Control *sender, int type, void *param);
 extern void updateLabels();
+extern void setupOTA();
 
 // EEPROM Calls
 extern void readEEP();

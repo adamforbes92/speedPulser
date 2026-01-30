@@ -14,9 +14,7 @@ Uses 'ESP32_FastPWM' for easier PWM control compared to LEDc
 Uses 'RunningMedian' for capturing multiple input pulses to compare against.  Used to ignore 'outliars'
 
 To calibrate or adapt to other models:
-> Set 'testSpeed' to 1 & confirm tempSpeed = 0.  This will allow the motor to run through EVERY duty cycle from 0 to 385 (10-bit).  Time change can be adjusted if 'too quick' to record changes
-> Monitor Serial Monitor and record in the Excel (under Resulting Speed) the running speed of the cluster at each duty cycle
-  > Note: duty cycle is >'100%' due to default 10 bit resolution 
+> Use WiFi to enable calibration, use 'Previous' to set to 385 duty - adjust blue potentiometer to maximum speed on cluster.  Run through each duty (using 'Next'), noting down each duty vs. speed
 > Copy each resulting speed into new 'motorPerformance'
 > Comment out the current motorPerformance and uncomment yours
 > Adjust 'maxSpeed' to suit new range 
@@ -32,6 +30,7 @@ RunningMedian samples = RunningMedian(averageFilter);  // for calculating median
 TickTwo tickEEP(writeEEP, eepRefresh);
 TickTwo tickWiFi(disconnectWifi, wifiDisable);  // timer for disconnecting wifi after 30s if no connections - saves power
 Preferences pref;
+ESPAsyncHTTPUpdateServer updateServer;
 
 // interrupt routine for the incoming pulse from opto
 void incomingHz() {                                               // Interrupt 0 service routine
@@ -52,10 +51,10 @@ void setup() {
   DEBUG_PRINTLN("Initialising SpeedPulser...");
 #endif
 
-  readEEP();         // read the EEPROM for previous saved states
-  tickEEP.start();   // begin ticker for the EEPROM
-  tickWiFi.start();  // begin ticker for the WiFi (to turn off after 60s)
-  updateMotorArray();
+  readEEP();           // read the EEPROM for previous saved states
+  tickEEP.start();     // begin ticker for the EEPROM
+  tickWiFi.start();    // begin ticker for the WiFi (to turn off after 60s)
+  updateMotorArray();  // update the motor array with the stored value from EEP
 
   basicInit();                                                // init PWM, Serial, Pin IO etc.  Kept in '_io.ino' for cleanliness due to the number of Serial outputs
   motorPWM->setPWM(pinMotorOutput, pwmFrequency, dutyCycle);  // set motor to off in first instance (0% duty)
@@ -69,7 +68,7 @@ void setup() {
   setupUI();                           // setup wifi user interface
   WiFi.setTxPower(WIFI_POWER_8_5dBm);  // some C3 boards require a lower Tx power otherwise it won't appear
 
-  updateLabels();
+  updateLabels();  // set base values for WiFi
 }
 
 void loop() {
@@ -90,12 +89,12 @@ void loop() {
     }
   }
 
-  if (tempNeedleSweep) {
+  if (testNeedleSweep) { // for flag set in WiFi for testing needle sweep
     needleSweep();
-    tempNeedleSweep = false;
+    testNeedleSweep = false;
   }
 
-  if (updateMotorPerformance) {
+  if (updateMotorPerformance) { // only refresh the motor array if cal. changed
     updateMotorArray();
   }
 

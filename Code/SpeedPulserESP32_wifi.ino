@@ -30,7 +30,7 @@ void setupUI() {
   ESPUI.addControl(Option, "FutureCal1; Forbes-Automotive", "FutureCal1", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
   ESPUI.addControl(Option, "FutureCal2; Forbes-Automotive", "FutureCal2", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
   ESPUI.addControl(Option, "FutureCal3; Forbes-Automotive", "FutureCal3", Dark, int16_calNumber);  // purely for future cals so WiFi is already pre-defined
-  
+
   ESPUI.addControl(Separator, "Testing", "", Dark, tabAdvanced);
   bool_testSpeedo = ESPUI.addControl(Switcher, "Test Speedo", "", Dark, tabAdvanced, generalCallback);
   int16_tempSpeed = ESPUI.addControl(Slider, "Go to Speed", String(tempSpeed), Dark, tabAdvanced, generalCallback);
@@ -153,7 +153,7 @@ void extendedCallback(Control *sender, int type, void *param) {
   switch (tempID) {
     case 7:
       if (type == B_UP) {
-        tempNeedleSweep = true;
+        testNeedleSweep = true;
       }
       break;
     case 38:
@@ -188,23 +188,17 @@ void extendedCallback(Control *sender, int type, void *param) {
 }
 
 void connectWifi() {
-  int connect_timeout;
-
   WiFi.hostname(wifiHostName);
-  Serial.println("Begin wifi...");
 
-  Serial.println("\nCreating access point...");
+#if serialDebugWifi
+  DEBUG_PRINTLN("Starting WiFi...");
+  DEBUG_PRINTLN("Creating access point...");
+#endif
+
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(wifiHostName);
-
-  /*connect_timeout = 20;
-  do {
-    delay(250);
-    Serial.print(",");
-    connect_timeout--;
-  } while (connect_timeout);*/
 }
 
 void textCallback(Control *sender, int type) {
@@ -218,11 +212,16 @@ void randomString(char *buf, int len) {
 }
 
 void disconnectWifi() {
+#if serialDebugWifi
   DEBUG_PRINTF("Number of connections: ");
   DEBUG_PRINTLN(WiFi.softAPgetStationNum());
+#endif
 
   if (WiFi.softAPgetStationNum() == 0) {
+#if serialDebugWifi
     DEBUG_PRINTLN("No connections, turning off");
+#endif
+
     WiFi.disconnect(true, false);
     WiFi.mode(WIFI_OFF);
   }
@@ -273,4 +272,17 @@ void updateLabels() {
       ESPUI.updateSelect(int16_calNumber, "Smiths70Forbes");
       break;
   }
+}
+
+void setupOTA() {
+  updateServer.setup(ESPUI.WebServer(), "", "");
+
+  updateServer.onUpdateBegin = [](const UpdateType type, int &result) {
+    //you can force abort the update like this if you need to:
+    //result = UpdateResult::UPDATE_ABORT;
+    Serial.println("Update started : " + String(type));
+  };
+  updateServer.onUpdateEnd = [](const UpdateType type, int &result) {
+    Serial.println("Update finished : " + String(type) + " result: " + String(result));
+  };
 }
